@@ -216,8 +216,8 @@
     <button class="sound" type="button" id="sound">🔇 Zapnout zvuk</button>
   </div>
   <div class="facts">
-    <p class="fact"><b>Mozková kůra</b> je vrchní vrásčitá vrstva mozku. Přemýšlí, plánuje a vymýšlí nápady.</p>
-    <p class="fact"><b>Plazí mozek</b> je nejstarší část hluboko uvnitř. Hlídá rychlé reakce: utéct, bránit se, najíst se.</p>
+    <p class="fact"><b>Mozková kůra</b> je vrchní vrásčitá vrstva mozku. Přemýšlí, plánuje a vymýšlí nápady. Proto si vybere zdravé ovoce.</p>
+    <p class="fact"><b>Plazí mozek</b> je nejstarší část hluboko uvnitř. Hlídá rychlé reakce: utéct, bránit se, najíst se. Nejradši by hned snědl hranolky!</p>
     <p class="fact"><b>Dopamín</b> je malá molekula s šestiúhelníkovým tělíčkem, ručičkami <b>OH</b> a ocáskem <b>NH₂</b>. Komu pomáhá hodný dopamín, ten bojuje silněji.</p>
   </div>
 </div>
@@ -230,6 +230,15 @@
     <rect x="122" y="180" width="20" height="54" rx="10" fill="#d9578f"/>
     <ellipse cx="86" cy="236" rx="17" ry="8" fill="#b23c72"/>
     <ellipse cx="132" cy="236" rx="17" ry="8" fill="#b23c72"/>
+    <!-- košík s ovocem -->
+    <g stroke="#241a4d" stroke-width="3.5" stroke-linejoin="round">
+      <path d="M28 214 Q 30 196 44 200 Q 50 184 64 196 L 66 214 Z" fill="none"/>
+      <path d="M26 200 Q 34 182 52 190 Q 44 202 26 200 Z" fill="#ffe14d"/>
+      <circle cx="36" cy="204" r="9" fill="#ff9f1c"/>
+      <g fill="#9b5de5"><circle cx="56" cy="200" r="5"/><circle cx="64" cy="202" r="5"/><circle cx="60" cy="208" r="5"/></g>
+      <path d="M22 210 L 70 210 L 64 236 L 28 236 Z" fill="#c68642"/>
+      <path d="M26 220 L 67 220 M 28 228 L 65 228" fill="none" stroke="#8a5a2b" stroke-width="3"/>
+    </g>
     <path d="M50 130 Q 26 140 22 112" fill="none" stroke="#d9578f" stroke-width="12" stroke-linecap="round"/>
     <circle cx="22" cy="104" r="16" fill="#3d8bff" stroke="#241a4d" stroke-width="4"/>
     <g fill="#241a4d" stroke="#241a4d" stroke-width="12">
@@ -269,6 +278,15 @@
     <path d="M168 150 Q 192 146 200 122" fill="none" stroke="#d9578f" stroke-width="12" stroke-linecap="round"/>
     <circle cx="204" cy="112" r="18" fill="#3d8bff" stroke="#241a4d" stroke-width="4"/>
     <path d="M194 104 Q 204 98 212 106" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+    <!-- jablko v ruce -->
+    <g transform="translate(-20 -2)">
+    <g stroke="#241a4d" stroke-width="3.5" stroke-linejoin="round">
+      <path d="M22 66 C 8 60 2 74 6 84 C 10 94 18 92 22 90 C 26 92 34 94 38 84 C 42 74 36 60 22 66 Z" fill="#ff3b3b"/>
+      <path d="M22 66 Q 22 58 26 54" fill="none" stroke-linecap="round"/>
+      <path d="M26 58 Q 36 52 40 58 Q 32 64 26 58 Z" fill="#3ddc84"/>
+    </g>
+    <path d="M12 72 Q 10 78 12 82" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+    </g>
   </svg>
 </template>
 
@@ -318,12 +336,23 @@
     <path d="M98 137 l5 9 l5 -10 l5 10 l5 -10 l5 10 l5 -10 l5 10 l5 -10 l5 10 l5 -10 l5 10 l5 -9" fill="#fff"/>
     <path d="M178 140 L 204 142 L 212 134 M 204 142 L 212 150" fill="none" stroke="#ff4d6d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
     <g fill="#ffb627" stroke="#241a4d" stroke-width="3" stroke-linejoin="round">
-      <path d="M180 166 L 186 186 L 194 162 Z"/>
+      <path d="M184 150 L 192 170 L 198 148 Z"/>
       <path d="M82 200 L 70 208 L 82 214 Z"/>
       <path d="M146 200 L 158 208 L 146 214 Z"/>
     </g>
-    <path d="M168 160 Q 190 168 200 150" fill="none" stroke="#3f8a22" stroke-width="11" stroke-linecap="round"/>
-    <path d="M196 152 l 8 -14 M 200 154 l 12 -8 M 200 158 l 14 -2" stroke="#fff7e8" stroke-width="4" stroke-linecap="round"/>
+    <path d="M170 158 Q 202 154 206 124" fill="none" stroke="#3f8a22" stroke-width="11" stroke-linecap="round"/>
+    <!-- hranolky -->
+    <g stroke="#241a4d" stroke-width="3" stroke-linejoin="round" transform="translate(-6 -66)">
+      <g fill="#ffd23f">
+        <rect x="200" y="140" width="7" height="30" rx="2" transform="rotate(-10 203 155)"/>
+        <rect x="208" y="134" width="7" height="34" rx="2"/>
+        <rect x="216" y="138" width="7" height="32" rx="2" transform="rotate(8 219 154)"/>
+        <rect x="224" y="144" width="7" height="28" rx="2" transform="rotate(16 227 158)"/>
+      </g>
+      <path d="M196 158 L 234 158 L 228 194 L 202 194 Z" fill="#e0234e"/>
+      <path d="M208 170 Q 215 182 222 170" fill="none" stroke="#ffd23f" stroke-width="4" stroke-linecap="round"/>
+    </g>
+    <path d="M196 122 l 6 -8 M 202 124 l 8 -8 M 208 126 l 8 -6" stroke="#fff7e8" stroke-width="4" stroke-linecap="round"/>
   </svg>
 </template>
 
