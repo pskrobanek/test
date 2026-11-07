@@ -82,8 +82,11 @@
     color: var(--line);
     white-space: nowrap;
   }
-  .corner.left .tag { background: var(--cortex); }
-  .corner.right .tag { background: var(--reptile); }
+  .tag { transition: background .3s; }
+  .corner.is-cortex .tag { background: var(--cortex); }
+  .corner.is-reptile .tag { background: var(--reptile); }
+  .corner.is-cortex .reptile-svg, .corner.is-reptile .cortex-svg { display: none; }
+  .corner.spin .bob { animation: spin .7s ease-in-out; }
   .hp { width: min(100%, 220px); height: 14px; border-radius: 999px; background: rgba(255,255,255,.18); overflow: hidden; }
   .hp b { display: block; height: 100%; width: 100%; border-radius: inherit; background: var(--hp); transition: width .25s ease-out; }
   .helper-chip {
@@ -180,28 +183,28 @@
 
   @media (prefers-reduced-motion: reduce) {
     .bob, .helper .hop, .stars i { animation: none; }
-    .corner.spin .helper .hop, .corner.cheer .helper .hop, .corner.hurt .mover { animation: none; }
+    .corner.spin .bob, .corner.spin .helper .hop, .corner.cheer .helper .hop, .corner.hurt .mover { animation: none; }
     .mover { transition: none; }
   }
 </style>
 
 <div class="wrap">
   <h1><span class="c">Mozková kůra</span> vs. <span class="r">plazí mozek</span></h1>
-  <p class="sub">Každému pomáhá malý dopamín. Ťukni na bojovníka a dopamíni se promění: hodný zezlobí a zlý zhodní!</p>
+  <p class="sub">Každému pomáhá malý dopamín. Ťukni na bojovníka a všechno se promění: kůra se stane plazím mozkem, plazí mozek kůrou a hodný dopamín zlým!</p>
 
   <div class="arena" id="arena">
     <div class="stars" id="stars"></div>
     <div class="corner left" id="left">
-      <span class="tag">MOZKOVÁ KŮRA</span>
+      <span class="tag" id="tagLeft">MOZKOVÁ KŮRA</span>
       <div class="hp"><b id="hpLeft"></b></div>
       <span class="helper-chip" id="chipLeft">pomocník: hodný dopamín</span>
-      <button class="fighter" type="button" id="btnLeft" aria-label="Mozková kůra a její dopamín — ťukni pro proměnu dopamínů"></button>
+      <button class="fighter" type="button" id="btnLeft" aria-label="Levý bojovník — ťukni pro proměnu"></button>
     </div>
     <div class="corner right" id="right">
-      <span class="tag">PLAZÍ MOZEK</span>
+      <span class="tag" id="tagRight">PLAZÍ MOZEK</span>
       <div class="hp"><b id="hpRight"></b></div>
       <span class="helper-chip" id="chipRight">pomocník: zlý dopamín</span>
-      <button class="fighter" type="button" id="btnRight" aria-label="Plazí mozek a jeho dopamín — ťukni pro proměnu dopamínů"></button>
+      <button class="fighter" type="button" id="btnRight" aria-label="Pravý bojovník — ťukni pro proměnu"></button>
     </div>
     <div class="boom" id="boom"><span id="boomText">BUM!</span></div>
   </div>
@@ -371,12 +374,18 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const sides = {
-    left:  { el: $('left'),  btn: $('btnLeft'),  chip: $('chipLeft'),  hpEl: $('hpLeft'),  hp: 100, good: true,  tpl: 'cortexTpl' },
-    right: { el: $('right'), btn: $('btnRight'), chip: $('chipRight'), hpEl: $('hpRight'), hp: 100, good: false, tpl: 'reptileTpl' },
+    left:  { el: $('left'),  btn: $('btnLeft'),  chip: $('chipLeft'),  tag: $('tagLeft'),  hpEl: $('hpLeft'),  hp: 100, good: true,  brain: 'cortex' },
+    right: { el: $('right'), btn: $('btnRight'), chip: $('chipRight'), tag: $('tagRight'), hpEl: $('hpRight'), hp: 100, good: false, brain: 'reptile' },
   };
   const wrapIn = (cls, child) => { const s = document.createElement('span'); s.className = cls; s.appendChild(child); return s; };
   for (const s of Object.values(sides)) {
-    const brain = wrapIn('flip brain', $(s.tpl).content.cloneNode(true));
+    const brain = document.createElement('span');
+    brain.className = 'flip brain';
+    for (const kind of ['cortex', 'reptile']) {
+      const svg = $(kind + 'Tpl').content.firstElementChild.cloneNode(true);
+      svg.classList.add(kind + '-svg');
+      brain.appendChild(svg);
+    }
     s.helper = document.createElement('span');
     s.helper.className = 'helper';
     s.helper.appendChild(wrapIn('hop', wrapIn('flip', $('dopaTpl').content.cloneNode(true))));
@@ -417,6 +426,9 @@
       s.helper.classList.toggle('evil', !s.good);
       s.el.classList.toggle('has-good', s.good);
       s.el.classList.toggle('has-evil', !s.good);
+      s.el.classList.toggle('is-cortex', s.brain === 'cortex');
+      s.el.classList.toggle('is-reptile', s.brain === 'reptile');
+      s.tag.textContent = s.brain === 'cortex' ? 'MOZKOVÁ KŮRA' : 'PLAZÍ MOZEK';
       s.chip.textContent = 'pomocník: ' + (s.good ? 'hodný' : 'zlý') + ' dopamín';
       s.hpEl.style.width = Math.max(0, s.hp) + '%';
     }
@@ -478,11 +490,14 @@
       restart(s.el, 'spin');
       const b = s.helper.getBoundingClientRect();
       sparkles(b.left + b.width / 2, b.top + b.height / 2);
+      const m = s.btn.getBoundingClientRect();
+      sparkles(m.left + m.width / 2, m.top + m.height / 3);
     }
     [660, 880, 1100, 1320].forEach((f, i) => setTimeout(() => tone(f, 0.18, 'sine', 0.07), i * 70));
     setTimeout(() => {
       sides.left.good = !sides.left.good;
       sides.right.good = !sides.right.good;
+      [sides.left.brain, sides.right.brain] = [sides.right.brain, sides.left.brain];
       render();
     }, reduced ? 0 : 350);
     setTimeout(() => {
