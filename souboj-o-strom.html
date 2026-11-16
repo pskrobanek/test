@@ -1,0 +1,995 @@
+<title>Souboj o strom</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap">
+<style>
+  /* Layout: jedna scéna při západu slunce. Uprostřed jabloň, vlevo a vpravo příšera, která ji drží za kmen. Nad scénou ukazatele síly, pod ní dvě velká tlačítka TŘES! a START. */
+  :root {
+    --sky-top: #231a4c;
+    --sky-mid: #6d3a6c;
+    --sky-low: #e98552;
+    --sun: #ffd27a;
+    --hill-far: #5a3567;
+    --hill: #3a2753;
+    --grass: #4f8d3d;
+    --grass-deep: #2a5428;
+    --bark: #6e4428;
+    --bark-deep: #432512;
+    --leaf-glow: #a6e870;
+    --bone: #f5e9cc;
+    --ink: #fff4e4;
+    --ink-soft: #e7d3e6;
+    --night: #160f2c;
+    --panel: rgba(22, 15, 44, .72);
+    --line: rgba(255, 244, 228, .22);
+    --gold: #ffcf3a;
+    --gold-deep: #b98a12;
+    --font-display: "Baloo 2", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background-color: var(--night);
+    background-image: radial-gradient(120% 70% at 50% 0%, #34245e 0%, var(--night) 70%);
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-weight: 600;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button { font-family: inherit; }
+  .app {
+    box-sizing: border-box;
+    max-width: 1000px;
+    min-height: 100%;
+    margin: 0 auto;
+    padding-block: 10px 18px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* hlavička */
+  .top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 16px; }
+  .brand { min-width: 0; }
+  h1 {
+    margin: 0;
+    font-weight: 800;
+    font-size: clamp(1.8rem, 6.4vw, 2.8rem);
+    line-height: .95;
+    letter-spacing: .01em;
+    text-wrap: balance;
+  }
+  h1 span { color: var(--leaf-glow); }
+  .sub { margin: 4px 0 0; color: var(--ink-soft); font-size: 1rem; line-height: 1.3; max-width: 48ch; text-wrap: balance; }
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--panel); border: 2px solid var(--line); }
+  .seg button, .chip {
+    appearance: none; border: 0; cursor: pointer;
+    font-weight: 800; font-size: .95rem; line-height: 1;
+    padding: 8px 12px; border-radius: 999px;
+    color: var(--ink); background: transparent;
+  }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--night); }
+  .chip { border: 2px solid var(--line); background: var(--panel); padding: 8px 12px; }
+  .seg button:disabled, .chip:disabled { opacity: .45; cursor: default; }
+
+  /* ukazatele síly */
+  .bars { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 10px; }
+  .bar { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .bar.right { align-items: flex-end; }
+  .bar .name { font-weight: 800; font-size: 1.15rem; line-height: 1; color: var(--mc); letter-spacing: .02em; }
+  .bar .name small { font-size: .78rem; color: var(--ink-soft); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin: 0 6px; }
+  .meter {
+    position: relative; width: 100%; height: 24px; border-radius: 999px;
+    background: rgba(255, 244, 228, .12); border: 2px solid var(--line); overflow: hidden;
+  }
+  .meter b { position: absolute; top: 0; bottom: 0; left: 0; width: 0%; background: var(--mc); border-radius: inherit; transition: width .08s linear; }
+  .bar.right .meter b { left: auto; right: 0; }
+  .meter .num {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font-weight: 800; font-size: .9rem; color: var(--ink);
+    text-shadow: 0 1px 2px rgba(0,0,0,.6);
+    font-variant-numeric: tabular-nums;
+  }
+  .bar.lead .meter { box-shadow: 0 0 14px 2px var(--mc); }
+  .vs { font-weight: 800; font-size: 1.1rem; color: var(--gold); padding-bottom: 2px; }
+
+  /* scéna */
+  .stage {
+    position: relative;
+    width: 100%;
+    width: min(100%, max(320px, calc((100vh - 360px) * 1.4286)));
+    width: min(100%, max(320px, calc((100dvh - 360px) * 1.4286)));
+    max-width: 100%;
+    aspect-ratio: 800 / 560;
+    margin-inline: auto;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 2px solid var(--line);
+    background: var(--sky-top);
+  }
+  .stage svg { display: block; width: 100%; height: 100%; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  .msg {
+    position: absolute; left: 50%; top: 3%;
+    transform: translateX(-50%);
+    max-width: 80%;
+    padding: 4px 18px 6px;
+    border-radius: 18px;
+    background: var(--panel);
+    text-align: center;
+    pointer-events: none;
+  }
+  .msg.pop { animation: pop .35s cubic-bezier(.3,1.6,.5,1); }
+  .msg .big { font-weight: 800; font-size: clamp(1.3rem, 5.6vw, 3.4rem); line-height: 1.05; text-wrap: balance; }
+  .msg .small { font-size: clamp(.8rem, 2.4vw, 1.15rem); line-height: 1.25; color: var(--ink-soft); text-wrap: balance; }
+  .msg .small:empty { display: none; }
+
+  /* ovládání */
+  .controls { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: stretch; margin-top: auto; }
+  .shake {
+    appearance: none; border: 0; cursor: pointer;
+    min-height: 92px; min-width: 0;
+    border-radius: 22px;
+    background: var(--mc); color: var(--night);
+    box-shadow: 0 6px 0 var(--md), 0 12px 20px rgba(0,0,0,.35);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+    transition: transform .06s, box-shadow .06s;
+  }
+  .shake .lbl { font-weight: 800; font-size: clamp(1.6rem, 6.5vw, 2.5rem); line-height: 1; }
+  .shake .who { font-weight: 800; font-size: .95rem; opacity: .8; }
+  .shake .key { font-weight: 600; }
+  .shake:active, .shake.hit { transform: translateY(5px); box-shadow: 0 1px 0 var(--md), 0 4px 10px rgba(0,0,0,.3); }
+  .shake:disabled { cursor: default; filter: saturate(.5) brightness(.75); }
+  .start {
+    appearance: none; border: 0; cursor: pointer;
+    min-width: 104px; padding: 0 16px;
+    border-radius: 22px;
+    background: var(--gold); color: var(--night);
+    font-weight: 800; font-size: clamp(1.2rem, 4.5vw, 1.6rem);
+    box-shadow: 0 6px 0 var(--gold-deep), 0 12px 20px rgba(0,0,0,.35);
+    touch-action: manipulation;
+  }
+  .start:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--gold-deep); }
+  .start:disabled { opacity: .35; cursor: default; transform: none; }
+  .start.wiggle { animation: wiggle .45s; }
+  button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .hint { margin: 0; text-align: center; color: var(--ink-soft); font-size: .98rem; line-height: 1.35; text-wrap: balance; }
+  .kbd-only { display: none; }
+  @media (hover: hover) and (pointer: fine) { .kbd-only { display: inline; } }
+  @media (max-width: 560px) {
+    .shake .key { display: none; }
+    .start { min-width: 84px; padding: 0 10px; }
+    .shake { min-height: 116px; }
+  }
+
+  /* SVG: příšery, strom, efekty */
+  .svgtxt { font-family: var(--font-display); font-weight: 800; }
+  .mb { fill: var(--b); }
+  .md { fill: var(--d); }
+  .ml { fill: var(--l); }
+  .ol { stroke: var(--d); stroke-width: 4; stroke-linejoin: round; }
+  .limb-o { fill: none; stroke: var(--d); stroke-linecap: round; }
+  .limb { fill: none; stroke: var(--b); stroke-linecap: round; }
+  .horn { fill: var(--bone); stroke: #8a7458; stroke-width: 3; stroke-linejoin: round; }
+  .claw { fill: none; stroke: var(--bone); stroke-width: 4; stroke-linecap: round; }
+  .eye { fill: #fffdf6; stroke: var(--d); stroke-width: 3; }
+  .pupil { fill: #1b1230; }
+  .glint { fill: #ffffff; }
+  .brow { fill: none; stroke: #1b1230; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+  .xeye { fill: none; stroke: #1b1230; stroke-width: 6; stroke-linecap: round; }
+  .mouth { fill: #2a0f24; }
+  .tooth { fill: #fffdf6; }
+  .tongue { fill: #ff6f91; }
+  .crown { fill: var(--gold); stroke: #a8790c; stroke-width: 3; stroke-linejoin: round; }
+  .sweat { fill: #9fe3ff; stroke: #3a8fc0; stroke-width: 2; }
+  .dead-eyes, .dead-mouth, .crown, .sweat { display: none; }
+  .is-dead .dead-eyes, .is-dead .dead-mouth { display: inline; }
+  .is-dead .alive-eyes, .is-dead .alive-mouth, .is-dead .brows { display: none; }
+  .is-winner .crown { display: inline; }
+  .is-worried .sweat { display: inline; }
+  [data-state="idle"] .mon { cursor: pointer; }
+  .star { fill: #fff4e4; animation: twinkle 3s infinite ease-in-out; }
+  .owl { animation: blink 4.5s infinite; transform-box: fill-box; transform-origin: center; }
+  .grow { animation: grow .5s cubic-bezier(.3,1.6,.5,1) both; transform-box: fill-box; transform-origin: center; }
+
+  @keyframes pop { from { transform: translateX(-50%) scale(.6); } to { transform: translateX(-50%) scale(1); } }
+  @keyframes wiggle { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
+  @keyframes twinkle { 0%,100% { opacity: .85; } 50% { opacity: .25; } }
+  @keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+  @keyframes grow { from { transform: scale(0); } to { transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) {
+    .star, .owl { animation: none; }
+    .msg.pop, .start.wiggle { animation: none; }
+  }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <h1>Souboj o&nbsp;<span>strom</span></h1>
+      <p class="sub">Dvě příšery třesou jedním stromem. Silnější vyhraje, slabší umře.</p>
+    </div>
+    <div class="opts">
+      <div class="seg" role="group" aria-label="Kdo hraje">
+        <button id="mode2" type="button" aria-pressed="true">2 hráči</button>
+        <button id="modeCpu" type="button" aria-pressed="false">Proti počítači</button>
+      </div>
+      <button id="level" type="button" class="chip" hidden>Počítač: střední</button>
+      <button id="sound" type="button" class="chip" aria-pressed="true">Zvuk: zapnutý</button>
+    </div>
+  </header>
+
+  <div class="bars">
+    <div class="bar left" id="barL" data-side="L">
+      <span class="name" id="nameL">Huňáč<small>síla</small></span>
+      <div class="meter"><b id="fillL"></b><span class="num" id="numL">0</span></div>
+    </div>
+    <div class="vs" aria-hidden="true">VS</div>
+    <div class="bar right" id="barR" data-side="R">
+      <span class="name" id="nameR"><small>síla</small>Chrupák</span>
+      <div class="meter"><b id="fillR"></b><span class="num" id="numR">0</span></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <svg id="scene" viewBox="0 0 800 560" role="img" aria-label="Jabloň a dvě příšery, které s ní třesou">
+      <defs>
+        <linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" style="stop-color: var(--sky-top)"/>
+          <stop offset=".55" style="stop-color: var(--sky-mid)"/>
+          <stop offset=".86" style="stop-color: var(--sky-low)"/>
+        </linearGradient>
+        <radialGradient id="gSun">
+          <stop offset="0" stop-color="#ffd27a" stop-opacity=".55"/>
+          <stop offset="1" stop-color="#ffd27a" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="gGrass" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" style="stop-color: var(--grass)"/>
+          <stop offset="1" style="stop-color: var(--grass-deep)"/>
+        </linearGradient>
+        <g id="apple">
+          <path d="M0,-11 q2,-7 6,-9" fill="none" stroke="#432512" stroke-width="3" stroke-linecap="round"/>
+          <ellipse cx="8" cy="-16" rx="6" ry="3" fill="#63b84c" transform="rotate(-30 8 -16)"/>
+          <circle r="11.5" fill="#e3363c" stroke="#9e1b25" stroke-width="2.5"/>
+          <circle cx="-4" cy="-4" r="3.5" fill="#ffffff" opacity=".6"/>
+        </g>
+      </defs>
+
+      <g id="bg">
+        <rect width="800" height="560" fill="url(#gSky)"/>
+        <g id="stars"></g>
+        <circle cx="640" cy="430" r="150" fill="url(#gSun)"/>
+        <circle cx="640" cy="430" r="62" style="fill: var(--sun)"/>
+        <g id="bats"></g>
+        <path style="fill: var(--hill-far)" d="M0,420 C110,372 220,384 320,404 C430,424 520,356 640,372 C720,382 770,398 800,394 L800,560 L0,560 Z"/>
+        <path style="fill: var(--hill)" d="M0,452 C90,424 190,430 290,446 C400,464 470,430 580,428 C690,426 750,444 800,440 L800,560 L0,560 Z"/>
+        <path fill="url(#gGrass)" d="M0,468 C150,460 300,464 400,466 C520,468 650,458 800,466 L800,560 L0,560 Z"/>
+        <g id="tufts"></g>
+        <ellipse cx="400" cy="486" rx="112" ry="12" fill="#000" opacity=".25"/>
+        <ellipse cx="262" cy="476" rx="66" ry="9" fill="#000" opacity=".22"/>
+        <ellipse cx="538" cy="476" rx="66" ry="9" fill="#000" opacity=".22"/>
+      </g>
+
+      <g id="graves"></g>
+
+      <g id="tree">
+        <path style="fill: var(--bark); stroke: var(--bark-deep)" stroke-width="4" stroke-linejoin="round"
+          d="M336,488 C356,474 370,440 375,392 C378,352 374,318 356,296 C340,282 318,272 292,264 L298,250 C324,256 348,266 366,280 C372,256 372,230 364,206 L384,200 C392,226 396,252 398,272 C406,250 414,226 426,204 L444,212 C432,236 424,262 420,286 C442,270 470,258 504,252 L508,266 C478,276 450,292 432,314 C424,344 424,392 430,430 C434,456 446,476 466,488 Z"/>
+        <path style="stroke: var(--bark-deep)" fill="none" stroke-width="4" stroke-linecap="round" opacity=".55"
+          d="M388,476 C392,440 388,400 392,350 M414,470 C410,430 414,390 410,350 M372,330 C380,316 384,304 384,292"/>
+        <ellipse cx="403" cy="404" rx="12" ry="16" fill="#241208"/>
+        <g class="owl">
+          <circle cx="398" cy="402" r="3.4" fill="#ffcf3a"/>
+          <circle cx="408" cy="402" r="3.4" fill="#ffcf3a"/>
+        </g>
+        <g id="canopy"></g>
+      </g>
+
+      <g id="mons"></g>
+      <g id="fx"></g>
+    </svg>
+    <div class="msg" id="msg" aria-live="polite">
+      <div class="big" id="msgBig">Připraveni?</div>
+      <div class="small" id="msgSmall">Zmáčkněte START.</div>
+    </div>
+  </div>
+
+  <p class="hint">Ťukni na příšeru a změní barvu. Po startu ťukej na svoje TŘES! co nejrychleji. Kdo první naplní sílu, je silnější.<span class="kbd-only"> Mezerník spustí hru.</span></p>
+
+  <div class="controls">
+    <button class="shake left" id="btnL" type="button" data-side="L">
+      <span class="lbl">TŘES!</span>
+      <span class="who"><span id="whoL">Huňáč</span><span class="key"> · klávesa A</span></span>
+    </button>
+    <button class="start" id="btnStart" type="button">START</button>
+    <button class="shake right" id="btnR" type="button" data-side="R">
+      <span class="lbl">TŘES!</span>
+      <span class="who"><span id="whoR">Chrupák</span><span class="key" id="keyR"> · klávesa L</span></span>
+    </button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const NS = 'http://www.w3.org/2000/svg';
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const GROUND = 470;
+  const STEP = 3; // kolik síly přidá jedno ťuknutí (34 ťuknutí = plná síla)
+  const NAMES = { L: 'Huňáč', R: 'Chrupák' };
+  const PALETTES = [
+    { b: '#3cc59c', d: '#1c7a62', l: '#c3f5e2' },
+    { b: '#9b5de5', d: '#552a96', l: '#e6d0ff' },
+    { b: '#ff9b2f', d: '#b45a00', l: '#ffe2b3' },
+    { b: '#4aa8e8', d: '#1c5d8f', l: '#d2ecff' },
+    { b: '#ef4f6f', d: '#9a1f3c', l: '#ffd3dd' },
+    { b: '#f3cf35', d: '#a4830b', l: '#fff4c2' },
+  ];
+  const LEVELS = [
+    { name: 'slabý', rate: 3.4 },
+    { name: 'střední', rate: 4.8 },
+    { name: 'silný', rate: 6.2 },
+  ];
+
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('souboj-o-strom:' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('souboj-o-strom:' + k, JSON.stringify(v)); } catch (e) {} },
+  };
+
+  const S = {
+    state: 'idle',
+    lock: false,
+    mode: store.get('mode', '2p') === 'cpu' ? 'cpu' : '2p',
+    level: Math.min(2, Math.max(0, Number(store.get('level', 1)) || 0)),
+    sound: store.get('sound', true) !== false,
+    str: { L: 0, R: 0 },
+    taps: 0,
+    theta: 0, omega: 0, phi: 0, omegaPhi: 0, th: 0,
+    cpuNext: 0,
+    timers: [],
+  };
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function later(fn, ms) { S.timers.push(setTimeout(fn, ms)); }
+  function rotPt(x, y, deg, cx, cy) {
+    const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+    const dx = x - cx, dy = y - cy;
+    return [cx + dx * c - dy * s, cy + dx * s + dy * c];
+  }
+  function canopyToWorld(x, y) {
+    const p = rotPt(x, y, S.phi, 400, 300);
+    return rotPt(p[0], p[1], S.th, 400, 480);
+  }
+  function easeOutBounce(x) {
+    const n = 7.5625, d = 2.75;
+    if (x < 1 / d) return n * x * x;
+    if (x < 2 / d) return n * (x -= 1.5 / d) * x + 0.75;
+    if (x < 2.5 / d) return n * (x -= 2.25 / d) * x + 0.9375;
+    return n * (x -= 2.625 / d) * x + 0.984375;
+  }
+
+  /* ---------- zvuky ---------- */
+  let ac = null, noiseBuf = null;
+  function audio() {
+    if (!S.sound) return null;
+    if (!ac) {
+      try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+    }
+    if (ac.state === 'suspended') ac.resume();
+    return ac;
+  }
+  function noise(a) {
+    if (!noiseBuf) {
+      noiseBuf = a.createBuffer(1, Math.floor(a.sampleRate * 0.6), a.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuf;
+  }
+  function tone(freq, dur, type, vol, when, slideTo) {
+    const a = audio(); if (!a) return;
+    const t = a.currentTime + (when || 0);
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol || 0.2, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(a.destination);
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+  const sfx = {
+    rustle() {
+      const a = audio(); if (!a) return;
+      const t = a.currentTime;
+      const s = a.createBufferSource(); s.buffer = noise(a);
+      const f = a.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = rnd(1500, 3400); f.Q.value = 0.9;
+      const g = a.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.28, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+      s.connect(f).connect(g).connect(a.destination);
+      s.start(t, rnd(0, 0.4), 0.17);
+    },
+    thud() { tone(170, 0.14, 'sine', 0.22, 0, 70); },
+    bonk() { tone(760, 0.12, 'square', 0.07, 0, 300); },
+    boop() { tone(rnd(420, 640), 0.12, 'triangle', 0.15, 0, 900); },
+    beep(hi) { tone(hi ? 880 : 520, hi ? 0.4 : 0.18, 'triangle', 0.22); },
+    fanfare() { [523, 659, 784, 1047].forEach((f, i) => tone(f, i === 3 ? 0.6 : 0.16, 'triangle', 0.18, i * 0.13)); },
+    lose() {
+      [392, 370, 349].forEach((f, i) => tone(f, 0.3, 'sawtooth', 0.06, i * 0.32, f * 0.88));
+      tone(330, 0.8, 'sawtooth', 0.06, 0.98, 220);
+    },
+    ghost() {
+      const a = audio(); if (!a) return;
+      const t = a.currentTime;
+      const o = a.createOscillator(), lfo = a.createOscillator(), lg = a.createGain(), g = a.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(480, t);
+      o.frequency.linearRampToValueAtTime(760, t + 0.7);
+      o.frequency.linearRampToValueAtTime(400, t + 1.7);
+      lfo.frequency.value = 6; lg.gain.value = 22;
+      lfo.connect(lg).connect(o.frequency);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.09, t + 0.2);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
+      o.connect(g).connect(a.destination);
+      o.start(t); lfo.start(t); o.stop(t + 1.9); lfo.stop(t + 1.9);
+    },
+  };
+
+  /* ---------- scéna: hvězdy, tráva, netopýři ---------- */
+  const starsG = $('stars');
+  for (let i = 0; i < 30; i++) {
+    const c = el('circle', { class: 'star', cx: rnd(10, 790).toFixed(0), cy: rnd(8, 190).toFixed(0), r: rnd(0.8, 2.2).toFixed(1) }, starsG);
+    c.style.animationDelay = (-rnd(0, 3)).toFixed(2) + 's';
+  }
+  const tuftsG = $('tufts');
+  for (let i = 0; i < 46; i++) {
+    const x = rnd(8, 792), y = rnd(482, 552), h = rnd(6, 12);
+    el('path', { d: `M${x - 5},${y} l3,-${h} M${x},${y} l0,-${h + 3} M${x + 5},${y} l-3,-${h}`, stroke: '#2a5428', 'stroke-width': 2.5, 'stroke-linecap': 'round', fill: 'none' }, tuftsG);
+  }
+  const batsG = $('bats');
+  const bats = [0, 520].map((off) => {
+    const g = el('g', {}, batsG);
+    el('path', { d: 'M0,0 C-6,-6 -12,-8 -20,-4 C-16,-2 -14,2 -12,4 C-8,1 -4,2 0,4 C4,2 8,1 12,4 C14,2 16,-2 20,-4 C12,-8 6,-6 0,0 Z', fill: '#1a1233' }, g);
+    return { g, off };
+  });
+
+  /* ---------- koruna stromu a jablka ---------- */
+  const canopy = $('canopy');
+  const CANOPY = [
+    [290, 235, 75, 0], [510, 235, 75, 0], [400, 255, 80, 0], [240, 190, 55, 0], [560, 190, 55, 0],
+    [330, 165, 85, 1], [470, 165, 85, 1], [400, 115, 85, 1], [275, 212, 52, 1], [525, 212, 52, 1],
+    [355, 100, 40, 2], [452, 92, 34, 2], [298, 150, 28, 2], [508, 150, 26, 2],
+  ];
+  const LEAF = ['#2f7f3e', '#3f9a48', '#63b84c'];
+  CANOPY.slice(0, 10).forEach(([x, y, r]) => el('circle', { cx: x, cy: y, r: r + 4, fill: '#1f4f2a' }, canopy));
+  CANOPY.forEach(([x, y, r, layer]) => el('circle', { cx: x, cy: y, r, fill: LEAF[layer], opacity: layer === 2 ? 0.55 : 1 }, canopy));
+  const APPLES = [[300, 200], [350, 240], [430, 230], [490, 205], [520, 262], [275, 265], [380, 150], [440, 150], [330, 120], [470, 110], [400, 80], [560, 220], [245, 215], [410, 285]];
+  const apples = APPLES.map(([x, y]) => {
+    const g = el('g', { transform: `translate(${x} ${y})` }, canopy);
+    const u = el('use', { href: '#apple' }, g);
+    return { x, y, g, u, on: true };
+  });
+
+  /* ---------- příšery ---------- */
+  function fur(cx, cy, rx, ry, n, depth) {
+    let d = '';
+    const N = n * 2;
+    for (let i = 0; i < N; i++) {
+      const t = i / N * Math.PI * 2 - Math.PI / 2;
+      const k = i % 2 ? 1 - depth : 1;
+      d += (i ? 'L' : 'M') + (cx + Math.cos(t) * rx * k).toFixed(1) + ',' + (cy + Math.sin(t) * ry * k).toFixed(1);
+    }
+    return d + 'Z';
+  }
+  function spikesB() {
+    let d = '';
+    const cx = 0, cy = -94, rx = 62, ry = 78, w = 7 * Math.PI / 180;
+    for (let deg = 188; deg <= 262; deg += 14) {
+      const a = deg * Math.PI / 180;
+      const p = (ang, k) => (cx + Math.cos(ang) * rx * k).toFixed(1) + ',' + (cy + Math.sin(ang) * ry * k).toFixed(1);
+      d += `M${p(a - w, 0.95)}L${p(a, 1.32)}L${p(a + w, 0.95)}Z`;
+    }
+    return d;
+  }
+  function limb(d, w) {
+    return `<path class="limb-o" d="${d}" stroke-width="${w + 7}"/><path class="limb" d="${d}" stroke-width="${w}"/>`;
+  }
+  const HAND_CLAWS_B = '<path class="claw" d="M116,-138 l7,-5 M121,-127 l8,0 M117,-116 l7,4"/>';
+  const HAND_CLAWS_F = '<path class="claw" d="M113,-102 l7,-5 M119,-91 l8,0 M114,-79 l7,4"/>';
+  const FEET_CLAWS = '<path class="claw" d="M51,-8 l8,2 M53,-16 l8,-1 M-8,-8 l8,2 M-6,-16 l8,-1"/>';
+
+  function monsterA() { // Huňáč: chlupatý, s rohy a spodními tesáky
+    return `
+      <g class="arm armB">${limb('M14,-124 Q60,-142 106,-126', 20)}<circle class="md ol" cx="108" cy="-126" r="14"/>${HAND_CLAWS_B}</g>
+      <path class="horn" d="M-26,-150 C-40,-176 -58,-192 -74,-206 C-54,-204 -32,-188 -12,-162 Z"/>
+      <path class="horn" d="M20,-156 C28,-182 42,-198 58,-212 C56,-192 48,-176 38,-152 Z"/>
+      <ellipse class="md ol" cx="-30" cy="-10" rx="26" ry="15"/>
+      <ellipse class="md ol" cx="32" cy="-10" rx="26" ry="15"/>
+      ${FEET_CLAWS}
+      <path class="mb ol" d="${fur(0, -92, 68, 82, 28, 0.085)}"/>
+      <ellipse class="ml" cx="10" cy="-60" rx="40" ry="44"/>
+      <path class="md" opacity=".35" d="M-40,-60 l6,-8 l6,8 M-46,-100 l6,-8 l6,8 M-30,-128 l6,-8 l6,8"/>
+      <g class="brows"><path class="brow" d="M-6,-152 L24,-143"/><path class="brow" d="M36,-142 L62,-151"/></g>
+      <g class="alive-eyes">
+        <circle class="eye" cx="12" cy="-124" r="18"/><circle class="eye" cx="46" cy="-121" r="14"/>
+        <circle class="pupil" cx="18" cy="-123" r="8"/><circle class="pupil" cx="51" cy="-120" r="6.5"/>
+        <circle class="glint" cx="21" cy="-127" r="3"/><circle class="glint" cx="53" cy="-124" r="2.4"/>
+      </g>
+      <g class="dead-eyes"><path class="xeye" d="M3,-133 l18,18 M21,-133 l-18,18 M39,-128 l14,14 M53,-128 l-14,14"/></g>
+      <g class="alive-mouth">
+        <path class="mouth" d="M2,-98 Q30,-104 58,-100 Q52,-70 28,-70 Q6,-72 2,-98 Z"/>
+        <ellipse class="tongue" cx="30" cy="-77" rx="13" ry="6"/>
+        <path class="tooth" d="M10,-74 l5,-16 l5,16 Z M38,-73 l5,-16 l5,16 Z"/>
+      </g>
+      <g class="dead-mouth"><path class="brow" d="M4,-90 q7,-7 14,0 t14,0 t14,0 t14,0"/><path class="tongue" d="M30,-88 q-2,22 9,22 q11,0 9,-21 Z"/></g>
+      <path class="sweat" d="M-36,-150 q-9,13 0,17 q9,-4 0,-17 Z"/>
+      <path class="crown" d="M-20,-168 L-24,-196 L-10,-184 L2,-206 L14,-184 L28,-196 L24,-168 Z"/>
+      <g class="arm armF">${limb('M20,-84 Q64,-72 102,-90', 22)}<circle class="mb ol" cx="104" cy="-90" r="16"/>${HAND_CLAWS_F}</g>`;
+  }
+  function monsterB() { // Chrupák: tříoký, s ostny na zádech a tlamou plnou zubů
+    return `
+      ${limb('M-54,-36 C-88,-36 -108,-60 -100,-92', 15)}
+      <path class="md ol" d="M-100,-92 L-116,-100 L-96,-112 Z"/>
+      <g class="arm armB">${limb('M10,-128 Q58,-148 106,-126', 20)}<circle class="md ol" cx="108" cy="-126" r="14"/>${HAND_CLAWS_B}</g>
+      <path class="md ol" d="${spikesB()}"/>
+      ${limb('M8,-168 Q12,-190 18,-206', 6)}<circle class="ml ol" cx="18" cy="-210" r="8"/>
+      ${limb('M30,-162 Q42,-182 52,-196', 6)}<circle class="ml ol" cx="54" cy="-199" r="8"/>
+      <ellipse class="md ol" cx="-28" cy="-10" rx="25" ry="15"/>
+      <ellipse class="md ol" cx="30" cy="-10" rx="25" ry="15"/>
+      ${FEET_CLAWS}
+      <path class="mb ol" d="M-62,-16 C-80,-92 -56,-172 0,-174 C56,-172 78,-96 64,-16 C58,4 -56,4 -62,-16 Z"/>
+      <ellipse class="ml" cx="12" cy="-50" rx="40" ry="38"/>
+      <circle class="md" opacity=".45" cx="-36" cy="-112" r="8"/><circle class="md" opacity=".45" cx="-22" cy="-140" r="5"/><circle class="md" opacity=".45" cx="-44" cy="-78" r="6"/>
+      <g class="brows"><path class="brow" d="M-8,-156 L16,-150"/><path class="brow" d="M26,-154 L52,-163"/></g>
+      <g class="alive-eyes">
+        <circle class="eye" cx="4" cy="-136" r="13"/><circle class="eye" cx="38" cy="-139" r="15"/><circle class="eye" cx="22" cy="-111" r="9"/>
+        <circle class="pupil" cx="8" cy="-135" r="6"/><circle class="pupil" cx="43" cy="-138" r="7"/><circle class="pupil" cx="25" cy="-110" r="4.5"/>
+        <circle class="glint" cx="10" cy="-138" r="2.2"/><circle class="glint" cx="45" cy="-141" r="2.6"/>
+      </g>
+      <g class="dead-eyes"><path class="xeye" d="M-5,-145 l18,18 M13,-145 l-18,18 M29,-148 l18,18 M47,-148 l-18,18 M16,-117 l12,12 M28,-117 l-12,12"/></g>
+      <g class="alive-mouth">
+        <path class="mouth" d="M-6,-94 Q30,-100 64,-96 Q58,-58 28,-56 Q0,-58 -6,-94 Z"/>
+        <path class="tooth" d="M-2,-94 L4,-84 L10,-95 L16,-84 L22,-96 L28,-84 L34,-96 L40,-84 L46,-96 L52,-84 L60,-95 Z"/>
+        <path class="tooth" d="M8,-58 L13,-68 L19,-57 L25,-69 L31,-56 L37,-69 L43,-57 L49,-67 L54,-61 Z"/>
+      </g>
+      <g class="dead-mouth"><path class="brow" d="M0,-84 l10,-6 l10,6 l10,-6 l10,6 l10,-6 l10,6"/><path class="tongue" d="M34,-82 q-2,22 9,22 q11,0 9,-21 Z"/></g>
+      <path class="sweat" d="M-34,-150 q-9,13 0,17 q9,-4 0,-17 Z"/>
+      <path class="crown" transform="rotate(-14 -16 -170)" d="M-38,-166 L-42,-194 L-28,-182 L-16,-204 L-4,-182 L10,-194 L6,-166 Z"/>
+      <g class="arm armF">${limb('M16,-84 Q62,-70 102,-90', 22)}<circle class="mb ol" cx="104" cy="-90" r="16"/>${HAND_CLAWS_F}</g>`;
+  }
+
+  const monsG = $('mons');
+  function makeMonster(side) {
+    const dir = side === 'L' ? 1 : -1;
+    const root = el('g', { class: 'mon', id: 'mon' + side }, monsG);
+    const flip = el('g', { transform: `scale(${dir} 1)` }, root);
+    const pose = el('g', {}, flip);
+    pose.innerHTML = side === 'L' ? monsterA() : monsterB();
+    const pal = Number(store.get('pal' + side, side === 'L' ? 0 : 1));
+    return {
+      side, dir, root, pose,
+      x: side === 'L' ? 262 : 538,
+      armF: pose.querySelector('.armF'),
+      armB: pose.querySelector('.armB'),
+      head: side === 'L' ? { x: 24, y: -122 } : { x: 20, y: -125 },
+      pal: pal >= 0 && pal < PALETTES.length ? pal : (side === 'L' ? 0 : 1),
+      jerk: 0, sign: 1, phase: rnd(0, 6),
+      deadAt: 0, winAt: 0, fadeAt: 0,
+    };
+  }
+  const M = { L: makeMonster('L'), R: makeMonster('R') };
+  if (M.L.pal === M.R.pal) M.R.pal = (M.L.pal + 1) % PALETTES.length;
+
+  function applyPalette(m) {
+    const p = PALETTES[m.pal];
+    m.root.style.setProperty('--b', p.b);
+    m.root.style.setProperty('--d', p.d);
+    m.root.style.setProperty('--l', p.l);
+    document.querySelectorAll(`[data-side="${m.side}"]`).forEach((n) => {
+      n.style.setProperty('--mc', p.b);
+      n.style.setProperty('--md', p.d);
+    });
+  }
+  applyPalette(M.L); applyPalette(M.R);
+
+  /* ---------- efekty: listí, padající jablka, duch, hrob ---------- */
+  const fx = $('fx'), gravesG = $('graves');
+  let leaves = [], falling = [], ghosts = [], pops = [], graves = [];
+
+  function spawnLeaf() {
+    const c = CANOPY[Math.floor(Math.random() * 10)];
+    const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * c[2] * 0.9;
+    const [x, y] = canopyToWorld(c[0] + Math.cos(a) * r, c[1] + Math.sin(a) * r);
+    const e = el('ellipse', { rx: 7, ry: 3.4, fill: LEAF[Math.floor(Math.random() * 3)] }, fx);
+    leaves.push({ e, x, y, vy: rnd(45, 95), ph: rnd(0, 6), rot: rnd(0, 360), vr: rnd(-220, 220), gy: rnd(476, 540), rest: 0 });
+    if (leaves.length > 140) leaves.shift().e.remove();
+  }
+  function dropApple(a) {
+    if (!a) {
+      const on = apples.filter((p) => p.on);
+      if (!on.length) return;
+      a = on[Math.floor(Math.random() * on.length)];
+    }
+    if (!a.on) return;
+    a.on = false;
+    a.g.setAttribute('visibility', 'hidden');
+    const [x, y] = canopyToWorld(a.x, a.y);
+    const e = el('use', { href: '#apple' }, fx);
+    falling.push({ e, x, y, vx: rnd(-30, 30), vy: rnd(-60, -20), rot: 0, gy: rnd(480, 506), bonked: false, rest: false, hits: 0 });
+  }
+  function pop(text, x, y) {
+    const e = el('text', { class: 'svgtxt', x, y, 'text-anchor': 'middle', 'font-size': 30, fill: '#fff4e4', stroke: '#160f2c', 'stroke-width': 5, 'paint-order': 'stroke' }, fx);
+    e.textContent = text;
+    pops.push({ e, x, y, t0: performance.now() });
+  }
+  function spawnGhost(m) {
+    const g = el('g', {}, fx);
+    const pal = PALETTES[m.pal];
+    if (m.side === 'L') {
+      el('path', { d: 'M-16,-50 C-24,-64 -34,-70 -44,-80 C-30,-78 -18,-70 -8,-58 Z M14,-52 C20,-66 28,-74 38,-82 C36,-70 30,-62 24,-50 Z', fill: '#ffffff', opacity: 0.85 }, g);
+    } else {
+      el('path', { d: 'M-4,-58 Q0,-74 6,-84 M16,-56 Q24,-70 32,-80', stroke: '#ffffff', 'stroke-width': 4, fill: 'none', 'stroke-linecap': 'round' }, g);
+      el('circle', { cx: 6, cy: -86, r: 5, fill: '#ffffff' }, g);
+      el('circle', { cx: 33, cy: -82, r: 5, fill: '#ffffff' }, g);
+    }
+    el('path', { d: 'M-34,0 C-34,-44 -22,-64 0,-64 C22,-64 34,-44 34,0 L25,-9 L16,0 L7,-9 L-2,0 L-11,-9 L-20,0 L-28,-9 Z', fill: pal.l, stroke: '#ffffff', 'stroke-width': 3 }, g);
+    el('ellipse', { cx: -10, cy: -38, rx: 6, ry: 8, fill: '#1b1230' }, g);
+    el('ellipse', { cx: 12, cy: -38, rx: 6, ry: 8, fill: '#1b1230' }, g);
+    el('ellipse', { cx: 1, cy: -20, rx: 6, ry: 8, fill: '#1b1230' }, g);
+    const t = el('text', { class: 'svgtxt', x: 46 * -m.dir, y: -62, 'text-anchor': 'middle', 'font-size': 26, fill: '#ffffff' }, g);
+    t.textContent = 'Buuu!';
+    ghosts.push({ g, x0: m.x - 150 * m.dir, y0: 420, t0: performance.now() });
+  }
+  function spawnGrave(m) {
+    const x = m.x - 150 * m.dir;
+    const g = el('g', {}, gravesG);
+    el('path', { d: 'M-36,0 L-36,-64 Q-36,-96 0,-96 Q36,-96 36,-64 L36,0 Z', fill: '#8f8bab', stroke: '#4d4868', 'stroke-width': 4, 'stroke-linejoin': 'round' }, g);
+    el('path', { d: 'M-24,-70 Q-24,-84 0,-84 Q24,-84 24,-70', fill: 'none', stroke: '#b5b1cc', 'stroke-width': 3, 'stroke-linecap': 'round' }, g);
+    const t1 = el('text', { class: 'svgtxt', x: 0, y: -48, 'text-anchor': 'middle', 'font-size': 17, fill: '#2f2a48' }, g);
+    t1.textContent = 'R.I.P.';
+    const t2 = el('text', { class: 'svgtxt', x: 0, y: -26, 'text-anchor': 'middle', 'font-size': 15, fill: '#2f2a48' }, g);
+    t2.textContent = NAMES[m.side];
+    el('path', { d: 'M-40,2 q6,-12 10,0 q6,-14 12,0 q6,-12 10,0 q6,-14 12,0 q6,-12 10,0 q6,-14 12,0 q6,-12 10,0 Z', fill: '#2f6a2e' }, g);
+    el('circle', { cx: 26, cy: -6, r: 5, fill: '#ffcf3a' }, g);
+    el('circle', { cx: -22, cy: -5, r: 4, fill: '#ff8fb0' }, g);
+    graves.push({ g, x, t0: performance.now() });
+  }
+  function clearFx() {
+    [...leaves, ...falling, ...pops].forEach((o) => o.e.remove());
+    ghosts.forEach((o) => o.g.remove());
+    graves.forEach((o) => o.g.remove());
+    leaves = []; falling = []; ghosts = []; pops = []; graves = [];
+  }
+
+  /* ---------- UI ---------- */
+  const msg = $('msg'), msgBig = $('msgBig'), msgSmall = $('msgSmall');
+  const btnL = $('btnL'), btnR = $('btnR'), btnStart = $('btnStart');
+  const mode2 = $('mode2'), modeCpu = $('modeCpu'), levelBtn = $('level'), soundBtn = $('sound');
+
+  function say(big, small) {
+    msgBig.textContent = big || '';
+    msgSmall.textContent = small || '';
+    msg.hidden = !big && !small;
+    if (!msg.hidden && !reduce) { msg.classList.remove('pop'); void msg.offsetWidth; msg.classList.add('pop'); }
+  }
+  function idleText() {
+    say('Připraveni?', S.mode === 'cpu' ? 'Zmáčkni START.' : 'Zmáčkněte START.');
+  }
+  function updateBars() {
+    for (const s of ['L', 'R']) {
+      $('fill' + s).style.width = S.str[s] + '%';
+      $('num' + s).textContent = Math.round(S.str[s]);
+    }
+    const lead = S.str.L === S.str.R ? null : (S.str.L > S.str.R ? 'L' : 'R');
+    $('barL').classList.toggle('lead', lead === 'L');
+    $('barR').classList.toggle('lead', lead === 'R');
+    if (S.state === 'play') {
+      M.L.root.classList.toggle('is-worried', S.str.R - S.str.L >= 15);
+      M.R.root.classList.toggle('is-worried', S.str.L - S.str.R >= 15);
+    }
+  }
+  function setUI() {
+    const busy = S.state === 'countdown' || S.state === 'play';
+    document.body.dataset.state = S.state;
+    btnStart.textContent = S.state === 'over' ? 'ZNOVU' : 'START';
+    btnStart.disabled = busy || S.lock;
+    mode2.setAttribute('aria-pressed', String(S.mode === '2p'));
+    modeCpu.setAttribute('aria-pressed', String(S.mode === 'cpu'));
+    mode2.disabled = modeCpu.disabled = busy;
+    levelBtn.hidden = S.mode !== 'cpu';
+    levelBtn.disabled = busy;
+    levelBtn.textContent = 'Počítač: ' + LEVELS[S.level].name;
+    soundBtn.textContent = S.sound ? 'Zvuk: zapnutý' : 'Zvuk: vypnutý';
+    soundBtn.setAttribute('aria-pressed', String(S.sound));
+    btnR.disabled = S.mode === 'cpu';
+    $('whoR').textContent = S.mode === 'cpu' ? 'Chrupák (počítač)' : 'Chrupák';
+    $('keyR').hidden = S.mode === 'cpu';
+  }
+
+  /* ---------- průběh hry ---------- */
+  function resetRound() {
+    S.timers.forEach(clearTimeout); S.timers = [];
+    S.str = { L: 0, R: 0 }; S.taps = 0; S.lock = false;
+    S.theta = S.omega = S.phi = S.omegaPhi = 0;
+    for (const m of [M.L, M.R]) {
+      m.deadAt = m.winAt = m.fadeAt = 0; m.jerk = 0;
+      m.root.classList.remove('is-dead', 'is-winner', 'is-worried');
+      m.pose.style.opacity = '';
+    }
+    clearFx();
+    apples.forEach((a) => {
+      a.on = true;
+      a.g.removeAttribute('visibility');
+      a.u.classList.remove('grow');
+      void a.u.getBoundingClientRect();
+      a.u.style.animationDelay = rnd(0, 0.35).toFixed(2) + 's';
+      a.u.classList.add('grow');
+    });
+    updateBars();
+  }
+  function startGame() {
+    if (S.state === 'countdown' || S.state === 'play' || S.lock) return;
+    if (S.state === 'over') resetRound();
+    audio();
+    S.state = 'countdown';
+    setUI();
+    ['3', '2', '1'].forEach((n, i) => later(() => { say(n, ''); sfx.beep(false); }, i * 700));
+    later(() => {
+      say('TŘES!', '');
+      sfx.beep(true);
+      S.state = 'play';
+      S.cpuNext = performance.now() + rnd(150, 350);
+      setUI();
+    }, 2100);
+    later(() => { if (S.state === 'play') say('', ''); }, 2800);
+  }
+  function nudgeStart() {
+    btnStart.classList.remove('wiggle'); void btnStart.offsetWidth; btnStart.classList.add('wiggle');
+    if (S.state === 'idle') say('Ještě ne!', S.mode === 'cpu' ? 'Nejdřív zmáčkni START.' : 'Nejdřív zmáčkněte START.');
+  }
+  function tap(side) {
+    if (S.state !== 'play') { if (S.state === 'idle' || (S.state === 'over' && !S.lock)) nudgeStart(); return; }
+    const m = M[side];
+    S.taps++;
+    S.str[side] = Math.min(100, S.str[side] + STEP);
+    m.jerk = 1; m.sign = -m.sign;
+    S.omega += m.dir * m.sign * rnd(26, 42) * (reduce ? 0.5 : 1);
+    S.omegaPhi -= m.dir * m.sign * rnd(30, 50) * (reduce ? 0.5 : 1);
+    spawnLeaf(); if (Math.random() < 0.5) spawnLeaf();
+    sfx.rustle();
+    if (S.taps % 5 === 0) dropApple();
+    updateBars();
+    if (S.str[side] >= 100) finish(side);
+  }
+  function finish(side) {
+    S.state = 'over';
+    S.lock = true;
+    const w = M[side], l = M[side === 'L' ? 'R' : 'L'];
+    const now = performance.now();
+    w.winAt = now;
+    w.root.classList.remove('is-worried'); l.root.classList.remove('is-worried');
+    w.root.classList.add('is-winner');
+    l.deadAt = now + 150;
+    l.fadeAt = now + 3600;
+    later(() => l.root.classList.add('is-dead'), 150);
+    sfx.lose();
+    const cpuWon = S.mode === 'cpu' && side === 'R';
+    say(NAMES[side] + ' vyhrál!', cpuWon ? NAMES.L + ' byl slabší a umřel. Zkus ťukat rychleji!' : NAMES[l.side] + ' byl slabší a umřel.');
+    apples.filter((a) => a.on).forEach((a, i) => later(() => dropApple(a), 350 + i * 80));
+    later(() => { spawnGhost(l); sfx.ghost(); }, 1100);
+    later(() => { S.lock = false; setUI(); }, 1400);
+    later(() => sfx.fanfare(), 1900);
+    later(() => spawnGrave(l), 3700);
+    setUI();
+  }
+
+  /* ---------- hlavní smyčka ---------- */
+  function updateMonster(m, now, dt, t) {
+    m.jerk *= Math.exp(-dt * 14);
+    let x = m.x, y = GROUND, rot = 0, piv = '0 0', arm = 0, armDx = 0, op = 1;
+    if (!m.deadAt && !m.winAt) {
+      y += reduce ? 0 : Math.sin(t * 3 + m.phase) * 1.6;
+      x += m.jerk * m.sign * 7 * m.dir;
+      rot = m.jerk * m.sign * 3.5;
+      armDx = Math.sin(S.th * Math.PI / 180) * 105 * m.dir; // ruce drží kmen, i když se kývá
+    }
+    if (m.winAt) {
+      const k = (now - m.winAt) / 1000;
+      y -= Math.abs(Math.sin(k * 6.5)) * (reduce ? 10 : 34);
+      arm = -80 + Math.sin(k * 13) * 10;
+      armDx = 52; // ruce nahoru vedle hlavy, ať nezakrývají obličej
+    }
+    if (m.deadAt && now >= m.deadAt) {
+      const p = clamp((now - m.deadAt) / 650, 0, 1);
+      rot = -88 * easeOutBounce(p);
+      piv = '-60 0';
+      arm = 40 * p;
+      if (m.fadeAt && now > m.fadeAt) op = 1 - clamp((now - m.fadeAt) / 600, 0, 1);
+    }
+    m.root.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+    m.pose.setAttribute('transform', `rotate(${rot.toFixed(2)} ${piv})`);
+    m.armF.setAttribute('transform', `translate(${armDx.toFixed(1)} 0) rotate(${arm.toFixed(1)} 18 -84)`);
+    m.armB.setAttribute('transform', `translate(${armDx.toFixed(1)} 0) rotate(${(arm * 1.1).toFixed(1)} 12 -126)`);
+    if (m.fadeAt) m.pose.style.opacity = op.toFixed(2);
+  }
+
+  const tree = $('tree');
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.034, Math.max(0, (now - last) / 1000));
+    last = now;
+    const t = now / 1000;
+
+    // strom je na pružině: ťuknutí do něj šťouchne, pak se zhoupne zpátky
+    S.omega += (-150 * S.theta - 5.5 * S.omega) * dt; S.theta += S.omega * dt;
+    S.omegaPhi += (-240 * S.phi - 7 * S.omegaPhi) * dt; S.phi += S.omegaPhi * dt;
+    S.theta = clamp(S.theta, -10, 10); S.phi = clamp(S.phi, -8, 8);
+    const wind = reduce ? 0 : Math.sin(t * 0.9) * 0.5 + Math.sin(t * 2.3) * 0.2;
+    S.th = S.theta + wind;
+    tree.setAttribute('transform', `rotate(${S.th.toFixed(2)} 400 480)`);
+    canopy.setAttribute('transform', `rotate(${S.phi.toFixed(2)} 400 300)`);
+
+    if (S.state === 'play' && S.mode === 'cpu' && now >= S.cpuNext) {
+      tap('R');
+      S.cpuNext = now + (1000 / LEVELS[S.level].rate) * rnd(0.55, 1.45);
+    }
+
+    updateMonster(M.L, now, dt, t);
+    updateMonster(M.R, now, dt, t);
+
+    for (let i = leaves.length - 1; i >= 0; i--) {
+      const l = leaves[i];
+      if (!l.rest) {
+        l.y += l.vy * dt;
+        l.x += Math.sin(now / 300 + l.ph) * 40 * dt;
+        l.rot += l.vr * dt;
+        if (l.y >= l.gy) { l.y = l.gy; l.rest = now; }
+      } else {
+        const k = (now - l.rest) / 2500;
+        if (k >= 1) { l.e.remove(); leaves.splice(i, 1); continue; }
+        l.e.setAttribute('opacity', (1 - k).toFixed(2));
+      }
+      l.e.setAttribute('transform', `translate(${l.x.toFixed(1)} ${l.y.toFixed(1)}) rotate(${l.rot.toFixed(0)})`);
+    }
+
+    for (const f of falling) {
+      if (f.rest) continue;
+      f.vy += 1100 * dt;
+      f.x += f.vx * dt;
+      f.y += f.vy * dt;
+      f.rot += f.vx * dt * 4;
+      if (!f.bonked && f.vy > 0) {
+        for (const m of [M.L, M.R]) {
+          if (m.deadAt) continue;
+          const hx = m.x + m.head.x * m.dir, hy = GROUND + m.head.y;
+          if (f.y < hy && Math.hypot(f.x - hx, f.y - hy) < 60) {
+            f.bonked = true;
+            f.vy = -f.vy * 0.45 - 60;
+            f.vx = (f.x >= hx ? 1 : -1) * rnd(70, 120);
+            m.jerk = 1;
+            sfx.bonk();
+            pop('Au!', hx, hy - 78);
+            break;
+          }
+        }
+      }
+      if (f.x < 12) { f.x = 12; f.vx = Math.abs(f.vx); }
+      if (f.x > 788) { f.x = 788; f.vx = -Math.abs(f.vx); }
+      if (f.y >= f.gy) {
+        f.y = f.gy;
+        if (f.vy > 160) { f.vy = -f.vy * 0.32; f.vx *= 0.6; if (!f.hits++) sfx.thud(); }
+        else { f.vy = 0; f.vx = 0; f.rest = true; }
+      }
+      f.e.setAttribute('transform', `translate(${f.x.toFixed(1)} ${f.y.toFixed(1)}) rotate(${f.rot.toFixed(0)})`);
+    }
+
+    for (let i = pops.length - 1; i >= 0; i--) {
+      const p = pops[i], k = (now - p.t0) / 900;
+      if (k >= 1) { p.e.remove(); pops.splice(i, 1); continue; }
+      p.e.setAttribute('y', (p.y - k * 30).toFixed(1));
+      p.e.setAttribute('opacity', (1 - k * k).toFixed(2));
+    }
+
+    for (let i = ghosts.length - 1; i >= 0; i--) {
+      const g = ghosts[i], p = (now - g.t0) / 2800;
+      if (p >= 1) { g.g.remove(); ghosts.splice(i, 1); continue; }
+      const op = p < 0.15 ? p / 0.15 * 0.92 : 0.92 * (1 - (p - 0.15) / 0.85);
+      const sc = 0.6 + 0.45 * Math.min(1, p * 3);
+      const x = g.x0 + (reduce ? 0 : Math.sin(p * 9) * 16);
+      g.g.setAttribute('transform', `translate(${x.toFixed(1)} ${(g.y0 - 280 * p).toFixed(1)}) scale(${sc.toFixed(2)})`);
+      g.g.setAttribute('opacity', op.toFixed(2));
+    }
+
+    for (const g of graves) {
+      const p = clamp((now - g.t0) / 500, 0, 1);
+      g.g.setAttribute('transform', `translate(${g.x} ${(482 + (1 - p) * 30).toFixed(1)})`);
+      g.g.setAttribute('opacity', p.toFixed(2));
+    }
+
+    if (!reduce) {
+      for (const b of bats) {
+        const bx = ((t * 42 + b.off) % 1100) - 150;
+        const by = 70 + b.off / 8 + Math.sin(t * 1.5 + b.off) * 14;
+        b.g.setAttribute('transform', `translate(${bx.toFixed(1)} ${by.toFixed(1)}) scale(1 ${(0.35 + 0.65 * Math.abs(Math.sin(t * 13 + b.off))).toFixed(2)})`);
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  /* ---------- ovládání ---------- */
+  function hit(btn) { btn.classList.add('hit'); setTimeout(() => btn.classList.remove('hit'), 90); }
+  [[btnL, 'L'], [btnR, 'R']].forEach(([btn, side]) => {
+    btn.addEventListener('pointerdown', (e) => {
+      if (btn.disabled) return;
+      e.preventDefault();
+      audio();
+      tap(side);
+    });
+    btn.addEventListener('click', (e) => { if (e.detail === 0 && !btn.disabled) tap(side); });
+    btn.addEventListener('contextmenu', (e) => e.preventDefault());
+  });
+  btnStart.addEventListener('click', startGame);
+
+  for (const side of ['L', 'R']) {
+    const m = M[side], other = M[side === 'L' ? 'R' : 'L'];
+    m.root.addEventListener('pointerdown', () => {
+      if (S.state !== 'idle') return;
+      let p = m.pal;
+      do { p = (p + 1) % PALETTES.length; } while (p === other.pal);
+      m.pal = p;
+      store.set('pal' + side, p);
+      applyPalette(m);
+      m.jerk = 1; m.sign = -m.sign;
+      sfx.boop();
+    });
+  }
+
+  function setMode(mode) {
+    if (S.state === 'countdown' || S.state === 'play' || S.mode === mode) return;
+    S.mode = mode; store.set('mode', mode);
+    if (S.state === 'over') { resetRound(); S.state = 'idle'; }
+    setUI(); idleText();
+  }
+  mode2.addEventListener('click', () => setMode('2p'));
+  modeCpu.addEventListener('click', () => setMode('cpu'));
+  levelBtn.addEventListener('click', () => {
+    S.level = (S.level + 1) % LEVELS.length; store.set('level', S.level); setUI();
+  });
+  soundBtn.addEventListener('click', () => {
+    S.sound = !S.sound; store.set('sound', S.sound);
+    if (!S.sound && ac) ac.suspend();
+    setUI();
+  });
+
+  addEventListener('keydown', (e) => {
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.code === 'KeyA') { audio(); tap('L'); hit(btnL); }
+    else if (e.code === 'KeyL' && S.mode === '2p') { audio(); tap('R'); hit(btnR); }
+    else if (e.code === 'Space' && !(document.activeElement && document.activeElement.tagName === 'BUTTON')) {
+      e.preventDefault(); startGame();
+    }
+  });
+
+  setUI();
+  idleText();
+  updateBars();
+  requestAnimationFrame(frame);
+})();
+</script>
