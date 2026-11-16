@@ -18,11 +18,15 @@ Dvě příšery, Huňáč a Chrupák, třesou jedním stromem. Silnější vyhra
 
 - Po **START** a odpočítávání 3, 2, 1 ťuká každý hráč co nejrychleji na svoje
   tlačítko **TŘES!** (na počítači klávesy **A** a **L**).
+- Každá příšera má pomocníka, který visí na větvi: Huňáček (klávesa **S**)
+  a Chrupáček (klávesa **K**), na mobilu tlačítko **POMOC!**. Když se na něj ťuká,
+  rozhoupe se, třese korunou stromu a taky přidává sílu (o něco míň než příšera).
 - Každé ťuknutí přidá příšeře sílu. Strom se kývá, padá z něj listí a jablka,
   a když jablko spadne příšeře na hlavu, řekne „Au!“.
 - Kdo první naplní sílu, je silnější a vyhraje: dostane korunu a skáče radostí.
   Slabší padne na záda, vyletí z něj duch a zůstane po něm hrob.
-- **Proti počítači** hraje Chrupáka počítač; jeho sílu jde přepnout
+  Pomocník vítěze se radostně houpe, pomocník poraženého spadne ze stromu a uteče.
+- **Proti počítači** hraje Chrupáka i Chrupáčka počítač; jeho sílu jde přepnout
   na slabý, střední nebo silný.
 - Když ťukneš na příšeru před startem, změní barvu.
 
