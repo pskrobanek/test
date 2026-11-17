@@ -20,33 +20,35 @@ Dvě příšery, Huňáč a Chrupák, třesou jedním stromem. Silnější vyhra
   tlačítko **TŘES!** (na počítači klávesy **A** a **L**).
 - Každá příšera má pomocníka, který visí na větvi: Huňáček (klávesa **S**)
   a Chrupáček (klávesa **K**), na mobilu tlačítko **POMOC!**. Když se na něj ťuká,
-  rozhoupe se, třese korunou stromu a taky přidává sílu (o něco míň než příšera).
-- Každé ťuknutí přidá příšeře sílu. Strom se kývá, padá z něj listí a jablka,
-  a když jablko spadne příšeře na hlavu, řekne „Au!“.
+  rozhoupe se, třese korunou stromu a taky přidává sílu.
+- Strom se kývá, padá z něj listí a jablka, a když jablko spadne příšeře
+  na hlavu, řekne „Au!“.
 - U každého hráče je vidět číslo **„+2 za ťuknutí“**: tolik síly přidá jedno
-  ťuknutí. Na začátku kola je to 2.
-- Tlačítka příšery a pomocníka se nesmí zmáčknout současně. Když se to stane,
-  ťuknutí neplatí a číslo za ťuknutí klesne o 1 (nejmíň na 1).
+  ťuknutí na TŘES! nebo POMOC!. Na začátku kola je to 2 a zvětšuje se jen
+  bonusy (nejvíc na 9). Obě tlačítka se smí mačkat i najednou.
 - Občas se hra zastaví a vyskočí **BONUS**: oba hráči ve stejnou chvíli dostanou
-  zlatou hvězdu se svým písmenkem (Huňáč z písmen Q W E R D F X C, Chrupák
-  z U I O P J H N M). Hra čeká, dokud jeden z nich svoje písmenko nezmáčkne.
-  Kdo je první, tomu číslo za ťuknutí stoupne o 1 (nejvíc na 9) a hraje se dál.
-  Kdo zmáčkne špatné písmenko, musí 1 sekundu počkat. Na mobilu se ťuká
-  na svoji hvězdu. Když už má někdo skoro plnou sílu (90), bonus nepřijde.
-- Hra písmenka říká nahlas česky („Huňáč: dé. Chrupák: há.“), pochválí nalezené
-  („Huňáč našel dé.“) a při špatném písmenku poradí („To je ef. Hledej dé.“).
-  Na počítači se dá písmenko zopakovat kliknutím na hvězdu. Mluví jen se zapnutým
-  zvukem a hlasem, který má prohlížeč (česky umí Windows, Mac, Android i iPhone).
-- Pod silou má každý hráč řádek svých 8 písmenek; ta, která už našel, svítí.
-  Dokud nenajde všechna, dostává jen ta, která mu ještě chybí. Když má všech 8,
-  hra ho pochválí a začne nové kolečko. Řádek se pamatuje i mezi koly.
+  zlatou hvězdu s písmenkem z celé abecedy A–Z (každý jiné). Písmenka se ukážou
+  až chvilku po zastavení, ať je nikdo netrefí omylem, když ještě ťuká.
+  Hra čeká, dokud jeden z nich svoje písmenko nezmáčkne; kdo je první, tomu
+  číslo za ťuknutí stoupne o 1 a hraje se dál. Kdo zmáčkne soupeřovo písmenko,
+  dá bonus jemu. Na mobilu se ťuká na svoji hvězdu. Když už má někdo skoro
+  plnou sílu (90), bonus nepřijde.
+- Hra písmenka říká nahlas česky („Huňáč: dé. Chrupák: há.“) a pochválí
+  nalezené („Huňáč našel dé.“). Na počítači se dá písmenko zopakovat kliknutím
+  na hvězdu. Mluví jen se zapnutým zvukem a hlasem, který má prohlížeč
+  (česky umí Windows, Mac, Android i iPhone).
+- Pod hrou má každý hráč celou abecedu; písmenka, která už našel, svítí,
+  a vedle je počet (třeba 7/26). Dokud nenajde všechna, dostává jen ta, která
+  mu ještě chybí. Když má celou abecedu, hra ho pochválí a začne znovu.
+  Abeceda se pamatuje i mezi koly.
 - Kdo první naplní sílu, je silnější a vyhraje: dostane korunu a skáče radostí.
   Slabší padne na záda, vyletí z něj duch a zůstane po něm hrob.
   Pomocník vítěze se radostně houpe, pomocník poraženého spadne ze stromu a uteče.
 - **Proti počítači** hraje Chrupáka i Chrupáčka počítač; jeho sílu jde přepnout
-  na slabý, střední nebo silný. Počítač nikdy nemačká obě tlačítka najednou
-  a svoje bonusové písmenko začne hledat, až hra dořekne písmenka; silnější
-  počítač ho najde rychleji.
+  na slabý, střední nebo silný. Svoje bonusové písmenko začne hledat, až hra
+  dořekne písmenka; silnější počítač ho najde rychleji. Když hráč proti počítači
+  zmáčkne špatné písmenko, musí 1 sekundu počkat a hra mu poradí
+  („To je ef. Hledej dé.“).
 - Když ťukneš na příšeru před startem, změní barvu.
 
 Spuštění: otevři soubor `souboj-o-strom.html` v prohlížeči.

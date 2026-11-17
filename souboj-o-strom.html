@@ -24,7 +24,6 @@
     --line: rgba(255, 244, 228, .22);
     --gold: #ffcf3a;
     --gold-deep: #b98a12;
-    --bad: #ff5a64;
     --font-display: "Baloo 2", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
     color-scheme: dark;
   }
@@ -92,12 +91,16 @@
     white-space: nowrap; font-variant-numeric: tabular-nums;
   }
   .pts b { font-size: 1.45rem; color: var(--mc); }
-  /* řádek bonusových písmenek: rozsvícená = už nalezená */
-  .abc { display: flex; flex-wrap: wrap; gap: 3px; }
+  /* abeceda pod hrou: rozsvícená písmenka už hráč našel */
+  .alphabet { display: flex; flex-direction: column; gap: 6px; }
+  .arow { display: grid; grid-template-columns: 5.2em minmax(0, 1fr) 3.4em; align-items: center; gap: 8px; }
+  .aname { font-weight: 800; font-size: 1rem; line-height: 1; color: var(--mc); }
+  .acount { font-weight: 800; font-size: .9rem; line-height: 1; color: var(--ink-soft); text-align: right; font-variant-numeric: tabular-nums; }
+  .abc { display: grid; grid-template-columns: repeat(26, minmax(0, 1fr)); gap: 3px; min-width: 0; }
   .abc span {
-    box-sizing: border-box; min-width: 1.45em; padding: 1px 2px 2px;
+    box-sizing: border-box; padding: 2px 0 3px;
     text-align: center; border-radius: 6px;
-    font-weight: 800; font-size: .78rem; line-height: 1.15;
+    font-weight: 800; font-size: clamp(.58rem, 1.8vw, .9rem); line-height: 1.1;
     color: var(--ink-soft); background: rgba(255, 244, 228, .07); border: 1.5px solid var(--line);
     transition: background .3s, color .3s;
   }
@@ -105,7 +108,6 @@
   .abc span.now { border-color: var(--gold); box-shadow: 0 0 8px var(--gold); }
   .abc span.now:not(.done) { color: var(--gold); }
   .pts.up { animation: ptsUp .7s ease-out; }
-  .pts.down { animation: ptsDown .6s ease-out; }
   .meter {
     position: relative; width: 100%; height: 24px; border-radius: 999px;
     background: rgba(255, 244, 228, .12); border: 2px solid var(--line); overflow: hidden;
@@ -125,8 +127,8 @@
   .stage {
     position: relative;
     width: 100%;
-    width: min(100%, max(320px, calc((100vh - 360px) * 1.4286)));
-    width: min(100%, max(320px, calc((100dvh - 360px) * 1.4286)));
+    width: min(100%, max(320px, calc((100vh - 420px) * 1.4286)));
+    width: min(100%, max(320px, calc((100dvh - 420px) * 1.4286)));
     max-width: 100%;
     aspect-ratio: 800 / 560;
     margin-inline: auto;
@@ -207,13 +209,16 @@
   .start.wiggle { animation: wiggle .45s; }
   button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
   .hint { margin: 0; text-align: center; color: var(--ink-soft); font-size: .98rem; line-height: 1.35; text-wrap: balance; }
+  .hint summary { cursor: pointer; font-weight: 800; color: var(--ink); }
+  .hint p { margin: 4px 0 0; }
   .kbd-only { display: none; }
   @media (hover: hover) and (pointer: fine) { .kbd-only { display: inline; } }
   @media (max-width: 560px) {
     .shake .key { display: none; }
     .start { min-width: 84px; padding: 0 10px; }
-    .abc { gap: 2px; }
-    .abc span { font-size: .7rem; min-width: 1.3em; }
+    .arow { grid-template-columns: 1fr auto; row-gap: 3px; }
+    .abc { grid-column: 1 / -1; order: 2; gap: 1.5px; }
+    .abc span { border-width: 1px; border-radius: 4px; }
     .side, .side.right { grid-template-columns: 1fr; }
     .shake { min-height: 100px; }
     .shake.help { order: 2; min-height: 64px; }
@@ -258,13 +263,12 @@
   @keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
   @keyframes grow { from { transform: scale(0); } to { transform: scale(1); } }
   @keyframes ptsUp { 0% { transform: scale(1.45); background: var(--gold); color: var(--night); } 100% { transform: scale(1); } }
-  @keyframes ptsDown { 0% { transform: translateX(-6px); background: var(--bad); } 25% { transform: translateX(6px); } 50% { transform: translateX(-3px); background: var(--bad); } 100% { transform: none; } }
   @keyframes bonusIn { from { transform: scale(0) rotate(-30deg); } to { transform: scale(1) rotate(0); } }
   @keyframes glow { 50% { box-shadow: 0 0 0 9px rgba(255, 207, 58, .25), 0 0 40px 14px rgba(255, 207, 58, .65); } }
   @keyframes wobble { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
   @media (prefers-reduced-motion: reduce) {
     .star, .owl { animation: none; }
-    .msg.pop, .start.wiggle, .pts.up, .pts.down, .bonus.live { animation: none; }
+    .msg.pop, .start.wiggle, .pts.up, .bonus.live { animation: none; }
   }
 </style>
 
@@ -288,13 +292,11 @@
     <div class="bar left" id="barL" data-side="L">
       <div class="row"><span class="name" id="nameL">Huňáč</span><span class="pts" id="ptsL" title="Kolik síly přidá jedno ťuknutí">+<b id="bodL">2</b> za ťuknutí</span></div>
       <div class="meter"><b id="fillL"></b><span class="num" id="numL">síla 0</span></div>
-      <div class="abc" id="abcL" title="Rozsvícená písmenka už Huňáč našel"></div>
     </div>
     <div class="vs" aria-hidden="true">VS</div>
     <div class="bar right" id="barR" data-side="R">
       <div class="row"><span class="name" id="nameR">Chrupák</span><span class="pts" id="ptsR" title="Kolik síly přidá jedno ťuknutí">+<b id="bodR">2</b> za ťuknutí</span></div>
       <div class="meter"><b id="fillR"></b><span class="num" id="numR">síla 0</span></div>
-      <div class="abc" id="abcR" title="Rozsvícená písmenka už Chrupák našel"></div>
     </div>
   </div>
 
@@ -370,7 +372,11 @@
     </button>
   </div>
 
-  <p class="hint">Ťukej co nejrychleji na TŘES! a POMOC!, ale ne na obě najednou, to se ti body za ťuknutí zmenší. Když vyskočí BONUS, hra se zastaví a řekne písmenka nahlas: kdo dřív zmáčkne svoje písmenko (na mobilu ťukne na svoji hvězdu), tomu se body zvětší. Pod silou svítí písmenka, která už máš. Kdo první naplní sílu, je silnější.<span class="kbd-only"> Klávesy: A a S pro Huňáče, K a L pro Chrupáka, mezerník spustí hru.</span> Ťuknutím na příšeru změníš její barvu.</p>
+  <div class="alphabet" role="group" aria-label="Nalezená písmenka">
+    <div class="arow" data-side="L"><span class="aname">Huňáč</span><div class="abc" id="abcL" title="Rozsvícená písmenka už Huňáč našel"></div><span class="acount" id="cntL">0/26</span></div>
+    <div class="arow" data-side="R"><span class="aname">Chrupák</span><div class="abc" id="abcR" title="Rozsvícená písmenka už Chrupák našel"></div><span class="acount" id="cntR">0/26</span></div>
+  </div>
+  <details class="hint" id="rules"><summary>Jak se hraje</summary><p>Ťukej co nejrychleji na TŘES! a POMOC! Když vyskočí BONUS, hra se zastaví a řekne písmenka nahlas: kdo dřív zmáčkne svoje písmenko (na mobilu ťukne na svoji hvězdu), tomu se body za ťuknutí zvětší. Pozor, když zmáčkneš soupeřovo písmenko, bonus dostane on. Pod hrou svítí písmenka, která už máš. Kdo první naplní sílu, je silnější.<span class="kbd-only"> Klávesy: A a S pro Huňáče, K a L pro Chrupáka, mezerník spustí hru.</span> Ťuknutím na příšeru změníš její barvu.</p></details>
 
   <div class="controls">
     <div class="side left">
@@ -404,10 +410,10 @@
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const GROUND = 470;
   const BOD_START = 2;          // kolik síly přidá jedno ťuknutí na začátku kola
-  const BOD_MIN = 1, BOD_MAX = 9;
-  const SIM_MS = 45;            // obě tlačítka jednoho hráče rychleji po sobě než tohle = zmáčknuto současně
+  const BOD_MAX = 9;
   const BONUS_BLOCK = 1000;     // po špatném písmenku musí hráč chvíli počkat (ms)
-  const BONUS_KEYS = { L: ['q', 'w', 'e', 'r', 'd', 'f', 'x', 'c'], R: ['u', 'i', 'o', 'p', 'j', 'h', 'n', 'm'] };
+  const ALPHABET = 'abcdefghijklmnopqrstuvwxyz'.split(''); // oba hráči dostávají písmenka z celé abecedy
+  const BONUS_REVEAL = 600;     // písmenka se ukážou chvilku po zastavení hry, ať je nikdo netrefí omylem při ťukání (ms)
   const NAMES = { L: 'Huňáč', R: 'Chrupák' };
   const HELPERS = { L: 'Huňáček', R: 'Chrupáček' };
   const PALETTES = [
@@ -885,7 +891,7 @@
   const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
   const busy = () => ['countdown', 'play', 'bonus', 'pause'].includes(S.state);
   function newPlayer() {
-    return { bod: BOD_START, lastMon: -1e9, lastHelp: -1e9, lastKey: '' };
+    return { bod: BOD_START };
   }
   function headPos(side) {
     const m = M[side];
@@ -894,25 +900,17 @@
   function updatePts(side, change) {
     const n = $('pts' + side);
     $('bod' + side).textContent = S.pl[side].bod;
-    if (change && !reduce) { n.classList.remove('up', 'down'); void n.offsetWidth; n.classList.add(change); }
+    if (change && !reduce) { n.classList.remove('up'); void n.offsetWidth; n.classList.add(change); }
   }
-  function penalize(side) {
-    const P = S.pl[side], before = P.bod;
-    P.bod = Math.max(BOD_MIN, P.bod - 1);
-    updatePts(side, 'down');
-    const [x, y] = headPos(side);
-    pop(P.bod < before ? 'Najednou! −1' : 'Najednou!', x, y, '#ff8a92', 1300);
-    sfx.buzz();
-  }
-  // Písmenka, která hráč už našel, se pamatují i mezi koly. Dokud nenajde všech 8,
+  // Písmenka, která hráč už našel, se pamatují i mezi koly. Dokud nenajde všech 26,
   // dostává jen ta, která mu ještě chybí; pak se řádek vynuluje a jede se znovu.
   const LETTER_NAMES = {
-    q: 'kvé', w: 'dvojité vé', e: 'é', r: 'er', d: 'dé', f: 'ef', x: 'iks', c: 'cé',
-    u: 'ú', i: 'í', o: 'ó', p: 'pé', j: 'jé', h: 'há', n: 'en', m: 'em',
+    a: 'á', b: 'bé', c: 'cé', d: 'dé', e: 'é', f: 'ef', g: 'gé', h: 'há', i: 'í', j: 'jé', k: 'ká', l: 'el', m: 'em',
+    n: 'en', o: 'ó', p: 'pé', q: 'kvé', r: 'er', s: 'es', t: 'té', u: 'ú', v: 'vé', w: 'dvojité vé', x: 'iks', y: 'ypsilon', z: 'zet',
   };
   const found = {
-    L: new Set([].concat(store.get('foundL', [])).filter((k) => BONUS_KEYS.L.includes(k))),
-    R: new Set([].concat(store.get('foundR', [])).filter((k) => BONUS_KEYS.R.includes(k))),
+    L: new Set([].concat(store.get('foundL', [])).filter((k) => ALPHABET.includes(k))),
+    R: new Set([].concat(store.get('foundR', [])).filter((k) => ALPHABET.includes(k))),
   };
   const lastKey = { L: '', R: '' };
   function renderAbc(side, current) {
@@ -920,10 +918,11 @@
       n.classList.toggle('done', found[side].has(n.dataset.k));
       n.classList.toggle('now', n.dataset.k === current);
     });
+    $('cnt' + side).textContent = found[side].size + '/' + ALPHABET.length;
   }
   for (const side of ['L', 'R']) {
     const box = $('abc' + side);
-    BONUS_KEYS[side].forEach((k) => {
+    ALPHABET.forEach((k) => {
       const n = document.createElement('span');
       n.dataset.k = k;
       n.textContent = k.toUpperCase();
@@ -966,19 +965,21 @@
     const id = ++bonusId;
     const keys = {};
     for (const side of ['L', 'R']) {
-      if (found[side].size >= BONUS_KEYS[side].length) { found[side].clear(); store.set('found' + side, []); }
-      let pool = BONUS_KEYS[side].filter((k) => !found[side].has(k));
+      if (found[side].size >= ALPHABET.length) { found[side].clear(); store.set('found' + side, []); }
+      // každý dostane písmenko, které ještě nenašel; nikdy oba stejné, ať je jasné, čí je
+      const taken = side === 'R' ? keys.L : '';
+      let pool = ALPHABET.filter((k) => !found[side].has(k) && k !== taken);
+      if (!pool.length) pool = ALPHABET.filter((k) => k !== taken);
       if (pool.length > 1) pool = pool.filter((k) => k !== lastKey[side]);
       keys[side] = lastKey[side] = pool[Math.floor(Math.random() * pool.length)];
-      $('bonusKey' + side).textContent = keys[side].toUpperCase();
-      renderAbc(side, keys[side]);
+      $('bonusKey' + side).textContent = '?';
       const el = $('bonus' + side);
       el.classList.remove('live', 'blocked');
       el.hidden = false;
       void el.offsetWidth;
       el.classList.add('live');
     }
-    S.bonus = { id, keys, blocked: { L: 0, R: 0 }, cpuAt: 0 };
+    S.bonus = { id, keys, blocked: { L: 0, R: 0 }, cpuAt: 0, revealAt: now + BONUS_REVEAL };
     stage.classList.add('frozen');
     say('BONUS!', TOUCH ? 'Kdo dřív ťukne na svoji hvězdu?' : 'Kdo dřív zmáčkne svoje písmenko?');
     sfx.bonusStart();
@@ -988,13 +989,14 @@
     const text = order.map((sd) => NAMES[sd] + ': ' + LETTER_NAMES[keys[sd]] + '.').join(' ');
     later(() => {
       if (!S.bonus || S.bonus.id !== id) return;
+      for (const sd of ['L', 'R']) { $('bonusKey' + sd).textContent = keys[sd].toUpperCase(); renderAbc(sd, keys[sd]); }
       speak(text, () => {
         if (S.state === 'bonus' && S.bonus && S.bonus.id === id && S.mode === 'cpu') {
           const f = LEVELS[S.level].find;
           S.bonus.cpuAt = performance.now() + rnd(f[0], f[1]);
         }
       });
-    }, 350);
+    }, BONUS_REVEAL);
     setUI();
   }
   function hideAllBonus() {
@@ -1006,7 +1008,7 @@
   function pickBonus(side, key) { // key === null: ťuknutí na hvězdu na mobilu
     if (S.state !== 'bonus' || !S.bonus) return;
     const now = performance.now();
-    if (now < S.bonus.blocked[side]) return;
+    if (now < S.bonus.revealAt || now < S.bonus.blocked[side]) return;
     const target = S.bonus.keys[side];
     if (key === null || key === target) { winBonus(side); return; }
     // špatné písmenko: chvíli nesmí mačkat, ať se nedá mačkat všechno naráz
@@ -1019,6 +1021,16 @@
     sfx.buzz();
     if (synth && !synth.speaking) speak('To je ' + LETTER_NAMES[key] + '. Hledej ' + LETTER_NAMES[target] + '.');
   }
+  function bonusKey(key) { // zmáčknuté písmenko během bonusu
+    const B = S.bonus;
+    if (S.state !== 'bonus' || !B || performance.now() < B.revealAt) return;
+    if (S.mode === 'cpu') { pickBonus('L', key); return; } // u klávesnice je jen jeden hráč
+    if (key === B.keys.L) { pickBonus('L', key); return; }
+    if (key === B.keys.R) { pickBonus('R', key); return; }
+    // dva hráči u jedné klávesnice: u cizího písmenka nejde poznat, kdo ho zmáčkl
+    pop('Vedle!', 400, 330, '#e7d3e6', 900);
+    if (synth && !synth.speaking) speak('To je ' + LETTER_NAMES[key] + '.');
+  }
   function winBonus(side) {
     if (S.state !== 'bonus' || !S.bonus) return;
     const P = S.pl[side], key = S.bonus.keys[side];
@@ -1026,15 +1038,15 @@
     S.state = 'pause';
     found[side].add(key);
     store.set('found' + side, [...found[side]]);
-    const all = found[side].size >= BONUS_KEYS[side].length;
+    const all = found[side].size >= ALPHABET.length;
     renderAbc(side);
     P.bod = Math.min(BOD_MAX, P.bod + 1);
     updatePts(side, 'up');
     const [x, y] = headPos(side);
     pop('Bonus! +1', x, y, '#ffcf3a', 1300);
     sfx.bonus();
-    say(NAMES[side] + ' má bonus!', all ? 'Našel všechna písmenka! +1 za ťuknutí' : '+1 za ťuknutí');
-    speak(NAMES[side] + ' našel ' + LETTER_NAMES[key] + '.' + (all ? ' A má všechna písmenka!' : ''));
+    say(NAMES[side] + ' má bonus!', all ? 'Má celou abecedu! +1 za ťuknutí' : '+1 za ťuknutí');
+    speak(NAMES[side] + ' našel ' + LETTER_NAMES[key] + '.' + (all ? ' A má celou abecedu!' : ''));
     const pause = all ? 2800 : 1500;
     later(() => {
       const t = performance.now();
@@ -1102,10 +1114,7 @@
   }
   function tap(side, helper) {
     if (S.state !== 'play') { if (S.state === 'idle' || (S.state === 'over' && !S.lock)) nudgeStart(); return; }
-    const P = S.pl[side], now = performance.now();
-    const otherLast = helper ? P.lastMon : P.lastHelp;
-    if (helper) P.lastHelp = now; else P.lastMon = now;
-    if (now - otherLast < SIM_MS) { penalize(side); return; } // obě tlačítka najednou: neplatí a body za ťuknutí klesnou
+    const P = S.pl[side];
     const k = reduce ? 0.5 : 1;
     S.taps++;
     S.str[side] = Math.min(100, S.str[side] + P.bod);
@@ -1233,12 +1242,12 @@
     canopy.setAttribute('transform', `rotate(${S.phi.toFixed(2)} 400 300)`);
 
     if (S.state === 'play' && S.mode === 'cpu' && now >= S.cpuNext) {
-      if (now - S.pl.R.lastHelp < SIM_MS + 10) S.cpuNext = now + SIM_MS + 10; // počítač nemačká obě najednou
-      else { tap('R'); S.cpuNext = now + (1000 / LEVELS[S.level].rate) * rnd(0.55, 1.45); }
+      tap('R');
+      S.cpuNext = now + (1000 / LEVELS[S.level].rate) * rnd(0.55, 1.45);
     }
     if (S.state === 'play' && S.mode === 'cpu' && now >= S.cpuHelpNext) {
-      if (now - S.pl.R.lastMon < SIM_MS + 10) S.cpuHelpNext = now + SIM_MS + 10;
-      else { tap('R', true); S.cpuHelpNext = now + (1000 / (LEVELS[S.level].rate * 0.7)) * rnd(0.55, 1.45); }
+      tap('R', true);
+      S.cpuHelpNext = now + (1000 / (LEVELS[S.level].rate * 0.7)) * rnd(0.55, 1.45);
     }
     // bonus jen dokud nikdo není skoro u konce
     if (S.state === 'play' && now >= S.nextBonus && Math.max(S.str.L, S.str.R) < 90) startBonus(now);
@@ -1350,7 +1359,7 @@
       e.preventDefault();
       if (TOUCH) { if (human()) pickBonus(side, null); return; }
       // na počítači kliknutí na hvězdu jen zopakuje písmenko nahlas
-      if (S.state === 'bonus' && S.bonus && synth && !synth.speaking) speak(LETTER_NAMES[S.bonus.keys[side]]);
+      if (S.state === 'bonus' && S.bonus && performance.now() >= S.bonus.revealAt && synth && !synth.speaking) speak(LETTER_NAMES[S.bonus.keys[side]]);
     });
   }
 
@@ -1393,10 +1402,7 @@
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
     const key = (e.key || '').toLowerCase();
     if (S.state === 'bonus') {
-      for (const side of ['L', 'R']) {
-        if (side === 'R' && S.mode === 'cpu') continue;
-        if (BONUS_KEYS[side].includes(key)) { pickBonus(side, key); break; }
-      }
+      if (/^[a-z]$/.test(key)) bonusKey(key);
       return; // během bonusu se netřese
     }
     if (S.state === 'pause') return;
@@ -1409,6 +1415,7 @@
     }
   });
 
+  if (matchMedia('(min-width: 700px)').matches) $('rules').open = true; // na mobilu jsou pravidla schovaná, ať jsou tlačítka vidět
   setUI();
   idleText();
   updateBars();
