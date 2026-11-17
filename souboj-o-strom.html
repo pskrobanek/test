@@ -142,8 +142,8 @@
   /* bonusová hvězda s písmenem klávesy a ubývajícím časem */
   .bonus {
     appearance: none; padding: 0;
-    position: absolute; top: 33%;
-    width: clamp(56px, 11vw, 86px); aspect-ratio: 1;
+    position: absolute; top: 30%;
+    width: clamp(66px, 13vw, 104px); aspect-ratio: 1;
     border-radius: 50%; border: 3px solid var(--ink);
     background: var(--gold); color: var(--night);
     box-shadow: 0 0 0 5px rgba(255, 207, 58, .3), 0 0 26px 8px rgba(255, 207, 58, .5);
@@ -152,13 +152,13 @@
   }
   .bonus.left { left: 3%; }
   .bonus.right { right: 3%; }
-  .bonus.live { animation: bonusIn .35s cubic-bezier(.3,1.6,.5,1); }
+  .bonus.live { animation: bonusIn .35s cubic-bezier(.3,1.6,.5,1), glow 1s .35s ease-in-out infinite; }
+  .bonus.blocked { filter: grayscale(1) brightness(.7); animation: wobble .4s; }
   .bonus.cpu { cursor: default; }
-  .bonus .bk { font-weight: 800; font-size: clamp(1.5rem, 5vw, 2.5rem); line-height: .9; }
-  .bonus .bt { font-weight: 800; font-size: clamp(.55rem, 1.6vw, .72rem); letter-spacing: .08em; }
-  .bonus .timer { position: absolute; left: 12%; right: 12%; bottom: -13px; height: 7px; border-radius: 999px; background: var(--panel); overflow: hidden; }
-  .bonus .timer i { display: block; height: 100%; background: var(--ink); transform-origin: left center; }
-  .bonus.live .timer i { animation: drain var(--limit, 2s) linear forwards; }
+  .bonus .bk { font-weight: 800; font-size: clamp(1.8rem, 6vw, 3rem); line-height: .9; }
+  .bonus .bt { font-weight: 800; font-size: clamp(.58rem, 1.7vw, .8rem); letter-spacing: .08em; }
+  .stage svg { transition: filter .25s; }
+  .stage.frozen svg { filter: brightness(.6) saturate(.75); }
   .bonus .touch-only { display: none; }
   @media (hover: none) and (pointer: coarse) {
     .bonus .touch-only { display: inline; }
@@ -251,7 +251,8 @@
   @keyframes ptsUp { 0% { transform: scale(1.45); background: var(--gold); color: var(--night); } 100% { transform: scale(1); } }
   @keyframes ptsDown { 0% { transform: translateX(-6px); background: var(--bad); } 25% { transform: translateX(6px); } 50% { transform: translateX(-3px); background: var(--bad); } 100% { transform: none; } }
   @keyframes bonusIn { from { transform: scale(0) rotate(-30deg); } to { transform: scale(1) rotate(0); } }
-  @keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+  @keyframes glow { 50% { box-shadow: 0 0 0 9px rgba(255, 207, 58, .25), 0 0 40px 14px rgba(255, 207, 58, .65); } }
+  @keyframes wobble { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
   @media (prefers-reduced-motion: reduce) {
     .star, .owl { animation: none; }
     .msg.pop, .start.wiggle, .pts.up, .pts.down, .bonus.live { animation: none; }
@@ -286,7 +287,7 @@
     </div>
   </div>
 
-  <div class="stage">
+  <div class="stage" id="stage">
     <svg id="scene" viewBox="0 0 800 560" role="img" aria-label="Jabloň a dvě příšery, které s ní třesou">
       <defs>
         <linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1">
@@ -351,16 +352,14 @@
     <button class="bonus left" id="bonusL" type="button" data-side="L" hidden aria-label="Bonus pro Huňáče">
       <span class="bk key-only" id="bonusKeyL">D</span><span class="bk touch-only">★</span>
       <span class="bt">BONUS</span>
-      <span class="timer"><i></i></span>
     </button>
     <button class="bonus right" id="bonusR" type="button" data-side="R" hidden aria-label="Bonus pro Chrupáka">
       <span class="bk key-only" id="bonusKeyR">J</span><span class="bk touch-only">★</span>
       <span class="bt">BONUS</span>
-      <span class="timer"><i></i></span>
     </button>
   </div>
 
-  <p class="hint">Ťukej co nejrychleji na TŘES! a POMOC!, ale ne na obě najednou, to se ti body za ťuknutí zmenší. Když vyskočí hvězda BONUS, rychle zmáčkni její klávesu (na mobilu na ni ťukni) a body se zvětší. Kdo první naplní sílu, je silnější.<span class="kbd-only"> Klávesy: A a S pro Huňáče, K a L pro Chrupáka, mezerník spustí hru.</span> Ťuknutím na příšeru změníš její barvu.</p>
+  <p class="hint">Ťukej co nejrychleji na TŘES! a POMOC!, ale ne na obě najednou, to se ti body za ťuknutí zmenší. Když vyskočí BONUS, hra se zastaví: kdo dřív zmáčkne svoje písmenko (na mobilu ťukne na svoji hvězdu), tomu se body zvětší. Kdo první naplní sílu, je silnější.<span class="kbd-only"> Klávesy: A a S pro Huňáče, K a L pro Chrupáka, mezerník spustí hru.</span> Ťuknutím na příšeru změníš její barvu.</p>
 
   <div class="controls">
     <div class="side left">
@@ -396,7 +395,7 @@
   const BOD_START = 2;          // kolik síly přidá jedno ťuknutí na začátku kola
   const BOD_MIN = 1, BOD_MAX = 9;
   const SIM_MS = 45;            // obě tlačítka jednoho hráče rychleji po sobě než tohle = zmáčknuto současně
-  const BONUS_LIMIT = 2000;     // jak dlouho bonus čeká, než zmizí (ms)
+  const BONUS_BLOCK = 1000;     // po špatném písmenku musí hráč chvíli počkat (ms)
   const BONUS_KEYS = { L: ['q', 'w', 'e', 'r', 'd', 'f', 'x', 'c'], R: ['u', 'i', 'o', 'p', 'j', 'h', 'n', 'm'] };
   const NAMES = { L: 'Huňáč', R: 'Chrupák' };
   const HELPERS = { L: 'Huňáček', R: 'Chrupáček' };
@@ -409,9 +408,9 @@
     { b: '#f3cf35', d: '#a4830b', l: '#fff4c2' },
   ];
   const LEVELS = [
-    { name: 'slabý', rate: 3.0, catch: 0.3 },
-    { name: 'střední', rate: 4.2, catch: 0.55 },
-    { name: 'silný', rate: 5.6, catch: 0.8 },
+    { name: 'slabý', rate: 3.0, find: [2400, 4000] },   // find: za jak dlouho počítač najde svoje písmenko (ms)
+    { name: 'střední', rate: 4.2, find: [1400, 2600] },
+    { name: 'silný', rate: 5.6, find: [800, 1500] },
   ];
 
   const store = {
@@ -431,6 +430,8 @@
     cpuNext: 0,
     cpuHelpNext: 0,
     pl: { L: newPlayer(), R: newPlayer() },
+    bonus: null,
+    nextBonus: Infinity,
     timers: [],
   };
 
@@ -509,6 +510,7 @@
     boop() { tone(rnd(420, 640), 0.12, 'triangle', 0.15, 0, 900); },
     bonus() { [660, 880, 1320].forEach((f, i) => tone(f, 0.14, 'triangle', 0.2, i * 0.07)); },
     buzz() { tone(150, 0.28, 'square', 0.07, 0, 90); },
+    bonusStart() { tone(988, 0.12, 'square', 0.07); tone(1319, 0.3, 'square', 0.07, 0.13); },
     beep(hi) { tone(hi ? 880 : 520, hi ? 0.4 : 0.18, 'triangle', 0.22); },
     fanfare() { [523, 659, 784, 1047].forEach((f, i) => tone(f, i === 3 ? 0.6 : 0.16, 'triangle', 0.18, i * 0.13)); },
     lose() {
@@ -820,7 +822,7 @@
   }
 
   /* ---------- UI ---------- */
-  const msg = $('msg'), msgBig = $('msgBig'), msgSmall = $('msgSmall');
+  const msg = $('msg'), msgBig = $('msgBig'), msgSmall = $('msgSmall'), stage = $('stage');
   const btnL = $('btnL'), btnR = $('btnR'), btnStart = $('btnStart'), hlpL = $('hlpL'), hlpR = $('hlpR');
   const mode2 = $('mode2'), modeCpu = $('modeCpu'), levelBtn = $('level'), soundBtn = $('sound');
 
@@ -847,15 +849,15 @@
     }
   }
   function setUI() {
-    const busy = S.state === 'countdown' || S.state === 'play';
+    const isBusy = busy();
     document.body.dataset.state = S.state;
     btnStart.textContent = S.state === 'over' ? 'ZNOVU' : 'START';
-    btnStart.disabled = busy || S.lock;
+    btnStart.disabled = isBusy || S.lock;
     mode2.setAttribute('aria-pressed', String(S.mode === '2p'));
     modeCpu.setAttribute('aria-pressed', String(S.mode === 'cpu'));
-    mode2.disabled = modeCpu.disabled = busy;
+    mode2.disabled = modeCpu.disabled = isBusy;
     levelBtn.hidden = S.mode !== 'cpu';
-    levelBtn.disabled = busy;
+    levelBtn.disabled = isBusy;
     levelBtn.textContent = 'Počítač: ' + LEVELS[S.level].name;
     soundBtn.textContent = S.sound ? 'Zvuk: zapnutý' : 'Zvuk: vypnutý';
     soundBtn.setAttribute('aria-pressed', String(S.sound));
@@ -868,8 +870,10 @@
   }
 
   /* ---------- body za ťuknutí, současné zmáčknutí a bonus ---------- */
+  const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
+  const busy = () => ['countdown', 'play', 'bonus', 'pause'].includes(S.state);
   function newPlayer() {
-    return { bod: BOD_START, lastMon: -1e9, lastHelp: -1e9, bonus: null, nextBonus: Infinity, cpuBonusAt: 0, lastKey: '' };
+    return { bod: BOD_START, lastMon: -1e9, lastHelp: -1e9, lastKey: '' };
   }
   function headPos(side) {
     const m = M[side];
@@ -888,49 +892,70 @@
     pop(P.bod < before ? 'Najednou! −1' : 'Najednou!', x, y, '#ff8a92', 1300);
     sfx.buzz();
   }
-  function showBonus(side, now) {
-    const P = S.pl[side];
-    const keys = BONUS_KEYS[side].filter((k) => k !== P.lastKey);
-    const key = keys[Math.floor(Math.random() * keys.length)];
-    P.bonus = { key, until: now + BONUS_LIMIT };
-    P.lastKey = key;
-    $('bonusKey' + side).textContent = key.toUpperCase();
-    const b = $('bonus' + side);
-    b.style.setProperty('--limit', BONUS_LIMIT + 'ms');
-    b.hidden = false;
-    b.classList.remove('live'); void b.offsetWidth; b.classList.add('live');
-    // počítač bonus někdy chytí, podle toho, jak je silný
-    P.cpuBonusAt = (S.mode === 'cpu' && side === 'R' && Math.random() < LEVELS[S.level].catch) ? now + rnd(450, 1400) : 0;
-  }
-  function hideBonus(side, now) {
-    const P = S.pl[side];
-    P.bonus = null; P.cpuBonusAt = 0;
-    P.nextBonus = now + rnd(1500, 3500);
-    $('bonus' + side).hidden = true;
-  }
-  function hideAllBonus() {
+  // Bonus: hra se zastaví, oba hráči dostanou svoje písmenko a čeká se, kdo ho zmáčkne dřív.
+  function startBonus(now) {
+    S.state = 'bonus';
+    const keys = {};
     for (const side of ['L', 'R']) {
       const P = S.pl[side];
-      P.bonus = null; P.cpuBonusAt = 0; P.nextBonus = Infinity;
-      $('bonus' + side).hidden = true;
+      const pool = BONUS_KEYS[side].filter((k) => k !== P.lastKey);
+      keys[side] = P.lastKey = pool[Math.floor(Math.random() * pool.length)];
+      $('bonusKey' + side).textContent = keys[side].toUpperCase();
+      const el = $('bonus' + side);
+      el.classList.remove('live', 'blocked');
+      el.hidden = false;
+      void el.offsetWidth;
+      el.classList.add('live');
     }
+    const f = LEVELS[S.level].find;
+    S.bonus = { keys, blocked: { L: 0, R: 0 }, cpuAt: S.mode === 'cpu' ? now + rnd(f[0], f[1]) : 0 };
+    stage.classList.add('frozen');
+    say('BONUS!', TOUCH ? 'Kdo dřív ťukne na svoji hvězdu?' : 'Kdo dřív zmáčkne svoje písmenko?');
+    sfx.bonusStart();
+    setUI();
   }
-  function catchBonus(side) {
+  function hideAllBonus() {
+    S.bonus = null;
+    stage.classList.remove('frozen');
+    for (const side of ['L', 'R']) $('bonus' + side).hidden = true;
+  }
+  function pickBonus(side, key) { // key === null: ťuknutí na hvězdu na mobilu
+    if (S.state !== 'bonus' || !S.bonus) return;
+    const now = performance.now();
+    if (now < S.bonus.blocked[side]) return;
+    if (key === null || key === S.bonus.keys[side]) { winBonus(side); return; }
+    // špatné písmenko: chvíli nesmí mačkat, ať se nedá mačkat všechno naráz
+    S.bonus.blocked[side] = now + BONUS_BLOCK;
+    const el = $('bonus' + side);
+    el.classList.add('blocked');
+    later(() => el.classList.remove('blocked'), BONUS_BLOCK);
+    const [x, y] = headPos(side);
+    pop('Vedle!', x, y, '#e7d3e6', 1000);
+    sfx.buzz();
+  }
+  function winBonus(side) {
+    if (S.state !== 'bonus') return;
     const P = S.pl[side];
-    if (S.state !== 'play' || !P.bonus) return;
-    hideBonus(side, performance.now());
+    hideAllBonus();
+    S.state = 'pause';
     P.bod = Math.min(BOD_MAX, P.bod + 1);
     updatePts(side, 'up');
     const [x, y] = headPos(side);
     pop('Bonus! +1', x, y, '#ffcf3a', 1300);
     sfx.bonus();
-  }
-  function missBonus(side) {
-    const P = S.pl[side];
-    if (S.state !== 'play' || !P.bonus) return;
-    hideBonus(side, performance.now());
-    const [x, y] = headPos(side);
-    pop('Vedle!', x, y, '#e7d3e6', 1000);
+    say(NAMES[side] + ' má bonus!', '+1 za ťuknutí');
+    later(() => {
+      const t = performance.now();
+      S.state = 'play';
+      S.cpuNext = t + rnd(150, 350);
+      S.cpuHelpNext = t + rnd(300, 600);
+      S.nextBonus = t + rnd(4000, 7000);
+      say('TŘES!', '');
+      sfx.beep(true);
+      setUI();
+    }, 1200);
+    later(() => { if (S.state === 'play') say('', ''); }, 1800);
+    setUI();
   }
 
   /* ---------- průběh hry ---------- */
@@ -962,7 +987,7 @@
     updateBars();
   }
   function startGame() {
-    if (S.state === 'countdown' || S.state === 'play' || S.lock) return;
+    if (busy() || S.lock) return;
     if (S.state === 'over') resetRound();
     audio();
     S.state = 'countdown';
@@ -974,8 +999,7 @@
       S.state = 'play';
       S.cpuNext = performance.now() + rnd(150, 350);
       S.cpuHelpNext = performance.now() + rnd(300, 700);
-      S.pl.L.nextBonus = performance.now() + rnd(1200, 2600);
-      S.pl.R.nextBonus = performance.now() + rnd(1200, 2600);
+      S.nextBonus = performance.now() + rnd(1800, 3200);
       setUI();
     }, 2100);
     later(() => { if (S.state === 'play') say('', ''); }, 2800);
@@ -1124,14 +1148,9 @@
       if (now - S.pl.R.lastMon < SIM_MS + 10) S.cpuHelpNext = now + SIM_MS + 10;
       else { tap('R', true); S.cpuHelpNext = now + (1000 / (LEVELS[S.level].rate * 0.7)) * rnd(0.55, 1.45); }
     }
-    if (S.state === 'play') {
-      for (const side of ['L', 'R']) {
-        const P = S.pl[side];
-        if (!P.bonus) { if (now >= P.nextBonus) showBonus(side, now); }
-        else if (P.cpuBonusAt && now >= P.cpuBonusAt) catchBonus(side);
-        else if (now >= P.bonus.until) hideBonus(side, now);
-      }
-    }
+    // bonus jen dokud nikdo není skoro u konce
+    if (S.state === 'play' && now >= S.nextBonus && Math.max(S.str.L, S.str.R) < 90) startBonus(now);
+    if (S.state === 'bonus' && S.bonus.cpuAt && now >= S.bonus.cpuAt) winBonus('R');
 
     updateMonster(M.L, now, dt, t);
     updateMonster(M.R, now, dt, t);
@@ -1234,8 +1253,8 @@
   for (const side of ['L', 'R']) {
     const b = $('bonus' + side);
     const human = () => !(side === 'R' && S.mode === 'cpu');
-    b.addEventListener('pointerdown', (e) => { e.preventDefault(); if (human()) catchBonus(side); });
-    b.addEventListener('click', (e) => { if (e.detail === 0 && human()) catchBonus(side); });
+    // na mobilu se ťuká na hvězdu, na počítači se musí najít písmenko na klávesnici
+    b.addEventListener('pointerdown', (e) => { e.preventDefault(); if (human() && TOUCH) pickBonus(side, null); });
   }
 
   for (const side of ['L', 'R']) {
@@ -1256,7 +1275,7 @@
   }
 
   function setMode(mode) {
-    if (S.state === 'countdown' || S.state === 'play' || S.mode === mode) return;
+    if (busy() || S.mode === mode) return;
     S.mode = mode; store.set('mode', mode);
     if (S.state === 'over') { resetRound(); S.state = 'idle'; }
     setUI(); idleText();
@@ -1275,16 +1294,14 @@
   addEventListener('keydown', (e) => {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
     const key = (e.key || '').toLowerCase();
-    if (S.state === 'play') {
+    if (S.state === 'bonus') {
       for (const side of ['L', 'R']) {
         if (side === 'R' && S.mode === 'cpu') continue;
-        const P = S.pl[side];
-        if (P.bonus && BONUS_KEYS[side].includes(key)) {
-          if (key === P.bonus.key) catchBonus(side); else missBonus(side);
-          return;
-        }
+        if (BONUS_KEYS[side].includes(key)) { pickBonus(side, key); break; }
       }
+      return; // během bonusu se netřese
     }
+    if (S.state === 'pause') return;
     if (e.code === 'KeyA') { audio(); tap('L'); hit(btnL); }
     else if (e.code === 'KeyL' && S.mode === '2p') { audio(); tap('R'); hit(btnR); }
     else if (e.code === 'KeyS') { audio(); tap('L', true); hit(hlpL); }

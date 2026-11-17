@@ -27,16 +27,18 @@ Dvě příšery, Huňáč a Chrupák, třesou jedním stromem. Silnější vyhra
   ťuknutí. Na začátku kola je to 2.
 - Tlačítka příšery a pomocníka se nesmí zmáčknout současně. Když se to stane,
   ťuknutí neplatí a číslo za ťuknutí klesne o 1 (nejmíň na 1).
-- Občas vyskočí zlatá hvězda **BONUS** s písmenem (Huňáč má písmena Q W E R D F X C,
-  Chrupák U I O P J H N M). Kdo ho zmáčkne, než vyprší čas (2 sekundy), tomu číslo
-  za ťuknutí stoupne o 1 (nejvíc na 9). Špatné písmeno bonus zruší. Na mobilu
-  se na hvězdu ťukne.
+- Občas se hra zastaví a vyskočí **BONUS**: oba hráči ve stejnou chvíli dostanou
+  zlatou hvězdu se svým písmenkem (Huňáč z písmen Q W E R D F X C, Chrupák
+  z U I O P J H N M). Hra čeká, dokud jeden z nich svoje písmenko nezmáčkne.
+  Kdo je první, tomu číslo za ťuknutí stoupne o 1 (nejvíc na 9) a hraje se dál.
+  Kdo zmáčkne špatné písmenko, musí 1 sekundu počkat. Na mobilu se ťuká
+  na svoji hvězdu. Když už má někdo skoro plnou sílu (90), bonus nepřijde.
 - Kdo první naplní sílu, je silnější a vyhraje: dostane korunu a skáče radostí.
   Slabší padne na záda, vyletí z něj duch a zůstane po něm hrob.
   Pomocník vítěze se radostně houpe, pomocník poraženého spadne ze stromu a uteče.
 - **Proti počítači** hraje Chrupáka i Chrupáčka počítač; jeho sílu jde přepnout
   na slabý, střední nebo silný. Počítač nikdy nemačká obě tlačítka najednou
-  a bonus chytí jen někdy (silnější počítač častěji).
+  a svoje bonusové písmenko najde tím rychleji, čím je silnější.
 - Když ťukneš na příšeru před startem, změní barvu.
 
 Spuštění: otevři soubor `souboj-o-strom.html` v prohlížeči.
