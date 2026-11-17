@@ -23,11 +23,20 @@ Dvě příšery, Huňáč a Chrupák, třesou jedním stromem. Silnější vyhra
   rozhoupe se, třese korunou stromu a taky přidává sílu (o něco míň než příšera).
 - Každé ťuknutí přidá příšeře sílu. Strom se kývá, padá z něj listí a jablka,
   a když jablko spadne příšeře na hlavu, řekne „Au!“.
+- U každého hráče je vidět číslo **„+2 za ťuknutí“**: tolik síly přidá jedno
+  ťuknutí. Na začátku kola je to 2.
+- Tlačítka příšery a pomocníka se nesmí zmáčknout současně. Když se to stane,
+  ťuknutí neplatí a číslo za ťuknutí klesne o 1 (nejmíň na 1).
+- Občas vyskočí zlatá hvězda **BONUS** s písmenem (Huňáč má písmena Q W E R D F X C,
+  Chrupák U I O P J H N M). Kdo ho zmáčkne, než vyprší čas (2 sekundy), tomu číslo
+  za ťuknutí stoupne o 1 (nejvíc na 9). Špatné písmeno bonus zruší. Na mobilu
+  se na hvězdu ťukne.
 - Kdo první naplní sílu, je silnější a vyhraje: dostane korunu a skáče radostí.
   Slabší padne na záda, vyletí z něj duch a zůstane po něm hrob.
   Pomocník vítěze se radostně houpe, pomocník poraženého spadne ze stromu a uteče.
 - **Proti počítači** hraje Chrupáka i Chrupáčka počítač; jeho sílu jde přepnout
-  na slabý, střední nebo silný.
+  na slabý, střední nebo silný. Počítač nikdy nemačká obě tlačítka najednou
+  a bonus chytí jen někdy (silnější počítač častěji).
 - Když ťukneš na příšeru před startem, změní barvu.
 
 Spuštění: otevři soubor `souboj-o-strom.html` v prohlížeči.

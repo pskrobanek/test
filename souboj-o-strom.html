@@ -24,6 +24,7 @@
     --line: rgba(255, 244, 228, .22);
     --gold: #ffcf3a;
     --gold-deep: #b98a12;
+    --bad: #ff5a64;
     --font-display: "Baloo 2", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
     color-scheme: dark;
   }
@@ -81,8 +82,18 @@
   .bars { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 10px; }
   .bar { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
   .bar.right { align-items: flex-end; }
+  .bar .row { align-self: stretch; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 3px 8px; }
+  .bar.right .row { flex-direction: row-reverse; }
   .bar .name { font-weight: 800; font-size: 1.15rem; line-height: 1; color: var(--mc); letter-spacing: .02em; }
-  .bar .name small { font-size: .78rem; color: var(--ink-soft); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin: 0 6px; }
+  .pts {
+    font-weight: 800; font-size: .92rem; line-height: 1;
+    padding: 3px 11px 5px; border-radius: 999px;
+    background: var(--panel); border: 2px solid var(--mc); color: var(--ink);
+    white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  .pts b { font-size: 1.45rem; color: var(--mc); }
+  .pts.up { animation: ptsUp .7s ease-out; }
+  .pts.down { animation: ptsDown .6s ease-out; }
   .meter {
     position: relative; width: 100%; height: 24px; border-radius: 999px;
     background: rgba(255, 244, 228, .12); border: 2px solid var(--line); overflow: hidden;
@@ -127,6 +138,32 @@
   .msg .big { font-weight: 800; font-size: clamp(1.3rem, 5.6vw, 3.4rem); line-height: 1.05; text-wrap: balance; }
   .msg .small { font-size: clamp(.8rem, 2.4vw, 1.15rem); line-height: 1.25; color: var(--ink-soft); text-wrap: balance; }
   .msg .small:empty { display: none; }
+
+  /* bonusová hvězda s písmenem klávesy a ubývajícím časem */
+  .bonus {
+    appearance: none; padding: 0;
+    position: absolute; top: 33%;
+    width: clamp(56px, 11vw, 86px); aspect-ratio: 1;
+    border-radius: 50%; border: 3px solid var(--ink);
+    background: var(--gold); color: var(--night);
+    box-shadow: 0 0 0 5px rgba(255, 207, 58, .3), 0 0 26px 8px rgba(255, 207, 58, .5);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; touch-action: manipulation;
+  }
+  .bonus.left { left: 3%; }
+  .bonus.right { right: 3%; }
+  .bonus.live { animation: bonusIn .35s cubic-bezier(.3,1.6,.5,1); }
+  .bonus.cpu { cursor: default; }
+  .bonus .bk { font-weight: 800; font-size: clamp(1.5rem, 5vw, 2.5rem); line-height: .9; }
+  .bonus .bt { font-weight: 800; font-size: clamp(.55rem, 1.6vw, .72rem); letter-spacing: .08em; }
+  .bonus .timer { position: absolute; left: 12%; right: 12%; bottom: -13px; height: 7px; border-radius: 999px; background: var(--panel); overflow: hidden; }
+  .bonus .timer i { display: block; height: 100%; background: var(--ink); transform-origin: left center; }
+  .bonus.live .timer i { animation: drain var(--limit, 2s) linear forwards; }
+  .bonus .touch-only { display: none; }
+  @media (hover: none) and (pointer: coarse) {
+    .bonus .touch-only { display: inline; }
+    .bonus .key-only { display: none; }
+  }
 
   /* ovládání */
   .controls { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: stretch; margin-top: auto; }
@@ -211,9 +248,13 @@
   @keyframes twinkle { 0%,100% { opacity: .85; } 50% { opacity: .25; } }
   @keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
   @keyframes grow { from { transform: scale(0); } to { transform: scale(1); } }
+  @keyframes ptsUp { 0% { transform: scale(1.45); background: var(--gold); color: var(--night); } 100% { transform: scale(1); } }
+  @keyframes ptsDown { 0% { transform: translateX(-6px); background: var(--bad); } 25% { transform: translateX(6px); } 50% { transform: translateX(-3px); background: var(--bad); } 100% { transform: none; } }
+  @keyframes bonusIn { from { transform: scale(0) rotate(-30deg); } to { transform: scale(1) rotate(0); } }
+  @keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
   @media (prefers-reduced-motion: reduce) {
     .star, .owl { animation: none; }
-    .msg.pop, .start.wiggle { animation: none; }
+    .msg.pop, .start.wiggle, .pts.up, .pts.down, .bonus.live { animation: none; }
   }
 </style>
 
@@ -235,13 +276,13 @@
 
   <div class="bars">
     <div class="bar left" id="barL" data-side="L">
-      <span class="name" id="nameL">Huňáč<small>síla</small></span>
-      <div class="meter"><b id="fillL"></b><span class="num" id="numL">0</span></div>
+      <div class="row"><span class="name" id="nameL">Huňáč</span><span class="pts" id="ptsL" title="Kolik síly přidá jedno ťuknutí">+<b id="bodL">2</b> za ťuknutí</span></div>
+      <div class="meter"><b id="fillL"></b><span class="num" id="numL">síla 0</span></div>
     </div>
     <div class="vs" aria-hidden="true">VS</div>
     <div class="bar right" id="barR" data-side="R">
-      <span class="name" id="nameR"><small>síla</small>Chrupák</span>
-      <div class="meter"><b id="fillR"></b><span class="num" id="numR">0</span></div>
+      <div class="row"><span class="name" id="nameR">Chrupák</span><span class="pts" id="ptsR" title="Kolik síly přidá jedno ťuknutí">+<b id="bodR">2</b> za ťuknutí</span></div>
+      <div class="meter"><b id="fillR"></b><span class="num" id="numR">síla 0</span></div>
     </div>
   </div>
 
@@ -307,9 +348,19 @@
       <div class="big" id="msgBig">Připraveni?</div>
       <div class="small" id="msgSmall">Zmáčkněte START.</div>
     </div>
+    <button class="bonus left" id="bonusL" type="button" data-side="L" hidden aria-label="Bonus pro Huňáče">
+      <span class="bk key-only" id="bonusKeyL">D</span><span class="bk touch-only">★</span>
+      <span class="bt">BONUS</span>
+      <span class="timer"><i></i></span>
+    </button>
+    <button class="bonus right" id="bonusR" type="button" data-side="R" hidden aria-label="Bonus pro Chrupáka">
+      <span class="bk key-only" id="bonusKeyR">J</span><span class="bk touch-only">★</span>
+      <span class="bt">BONUS</span>
+      <span class="timer"><i></i></span>
+    </button>
   </div>
 
-  <p class="hint">Ťukni na příšeru a změní barvu. Po startu ťukej co nejrychleji na TŘES! a POMOC! Pomocníci visí na větvi a taky přidávají sílu. Kdo první naplní sílu, je silnější.<span class="kbd-only"> Klávesy: A a S pro Huňáče, K a L pro Chrupáka, mezerník spustí hru.</span></p>
+  <p class="hint">Ťukej co nejrychleji na TŘES! a POMOC!, ale ne na obě najednou, to se ti body za ťuknutí zmenší. Když vyskočí hvězda BONUS, rychle zmáčkni její klávesu (na mobilu na ni ťukni) a body se zvětší. Kdo první naplní sílu, je silnější.<span class="kbd-only"> Klávesy: A a S pro Huňáče, K a L pro Chrupáka, mezerník spustí hru.</span> Ťuknutím na příšeru změníš její barvu.</p>
 
   <div class="controls">
     <div class="side left">
@@ -342,8 +393,11 @@
   const NS = 'http://www.w3.org/2000/svg';
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const GROUND = 470;
-  const STEP = 2.5; // kolik síly přidá jedno ťuknutí příšery (40 ťuknutí = plná síla)
-  const HELP_STEP = 2; // kolik síly přidá jedno ťuknutí pomocníka
+  const BOD_START = 2;          // kolik síly přidá jedno ťuknutí na začátku kola
+  const BOD_MIN = 1, BOD_MAX = 9;
+  const SIM_MS = 45;            // obě tlačítka jednoho hráče rychleji po sobě než tohle = zmáčknuto současně
+  const BONUS_LIMIT = 2000;     // jak dlouho bonus čeká, než zmizí (ms)
+  const BONUS_KEYS = { L: ['q', 'w', 'e', 'r', 'd', 'f', 'x', 'c'], R: ['u', 'i', 'o', 'p', 'j', 'h', 'n', 'm'] };
   const NAMES = { L: 'Huňáč', R: 'Chrupák' };
   const HELPERS = { L: 'Huňáček', R: 'Chrupáček' };
   const PALETTES = [
@@ -355,9 +409,9 @@
     { b: '#f3cf35', d: '#a4830b', l: '#fff4c2' },
   ];
   const LEVELS = [
-    { name: 'slabý', rate: 3.0 },
-    { name: 'střední', rate: 4.2 },
-    { name: 'silný', rate: 5.6 },
+    { name: 'slabý', rate: 3.0, catch: 0.3 },
+    { name: 'střední', rate: 4.2, catch: 0.55 },
+    { name: 'silný', rate: 5.6, catch: 0.8 },
   ];
 
   const store = {
@@ -375,6 +429,8 @@
     taps: 0,
     theta: 0, omega: 0, phi: 0, omegaPhi: 0, th: 0,
     cpuNext: 0,
+    cpuHelpNext: 0,
+    pl: { L: newPlayer(), R: newPlayer() },
     timers: [],
   };
 
@@ -451,6 +507,8 @@
     thud() { tone(170, 0.14, 'sine', 0.22, 0, 70); },
     bonk() { tone(760, 0.12, 'square', 0.07, 0, 300); },
     boop() { tone(rnd(420, 640), 0.12, 'triangle', 0.15, 0, 900); },
+    bonus() { [660, 880, 1320].forEach((f, i) => tone(f, 0.14, 'triangle', 0.2, i * 0.07)); },
+    buzz() { tone(150, 0.28, 'square', 0.07, 0, 90); },
     beep(hi) { tone(hi ? 880 : 520, hi ? 0.4 : 0.18, 'triangle', 0.22); },
     fanfare() { [523, 659, 784, 1047].forEach((f, i) => tone(f, i === 3 ? 0.6 : 0.16, 'triangle', 0.18, i * 0.13)); },
     lose() {
@@ -710,10 +768,10 @@
     const e = el('use', { href: '#apple' }, fx);
     falling.push({ e, x, y, vx: rnd(-30, 30), vy: rnd(-60, -20), rot: 0, gy: rnd(480, 506), bonked: false, rest: false, hits: 0 });
   }
-  function pop(text, x, y) {
-    const e = el('text', { class: 'svgtxt', x, y, 'text-anchor': 'middle', 'font-size': 30, fill: '#fff4e4', stroke: '#160f2c', 'stroke-width': 5, 'paint-order': 'stroke' }, fx);
+  function pop(text, x, y, fill, dur) {
+    const e = el('text', { class: 'svgtxt', x, y, 'text-anchor': 'middle', 'font-size': 30, fill: fill || '#fff4e4', stroke: '#160f2c', 'stroke-width': 5, 'paint-order': 'stroke' }, fx);
     e.textContent = text;
-    pops.push({ e, x, y, t0: performance.now() });
+    pops.push({ e, x, y, t0: performance.now(), dur: dur || 900 });
   }
   function spawnGhost(m) {
     const g = el('g', {}, fx);
@@ -778,7 +836,7 @@
   function updateBars() {
     for (const s of ['L', 'R']) {
       $('fill' + s).style.width = S.str[s] + '%';
-      $('num' + s).textContent = Math.round(S.str[s]);
+      $('num' + s).textContent = 'síla ' + Math.round(S.str[s]);
     }
     const lead = S.str.L === S.str.R ? null : (S.str.L > S.str.R ? 'L' : 'R');
     $('barL').classList.toggle('lead', lead === 'L');
@@ -806,12 +864,81 @@
     $('whoR').textContent = cpu ? 'počítač' : 'Chrupák';
     $('whoHR').textContent = cpu ? 'počítač' : 'Chrupáček';
     $('keyR').hidden = $('keyHR').hidden = cpu;
+    $('bonusR').classList.toggle('cpu', cpu);
+  }
+
+  /* ---------- body za ťuknutí, současné zmáčknutí a bonus ---------- */
+  function newPlayer() {
+    return { bod: BOD_START, lastMon: -1e9, lastHelp: -1e9, bonus: null, nextBonus: Infinity, cpuBonusAt: 0, lastKey: '' };
+  }
+  function headPos(side) {
+    const m = M[side];
+    return [clamp(m.x + 20 * m.dir, 90, 710), GROUND - 215];
+  }
+  function updatePts(side, change) {
+    const n = $('pts' + side);
+    $('bod' + side).textContent = S.pl[side].bod;
+    if (change && !reduce) { n.classList.remove('up', 'down'); void n.offsetWidth; n.classList.add(change); }
+  }
+  function penalize(side) {
+    const P = S.pl[side], before = P.bod;
+    P.bod = Math.max(BOD_MIN, P.bod - 1);
+    updatePts(side, 'down');
+    const [x, y] = headPos(side);
+    pop(P.bod < before ? 'Najednou! −1' : 'Najednou!', x, y, '#ff8a92', 1300);
+    sfx.buzz();
+  }
+  function showBonus(side, now) {
+    const P = S.pl[side];
+    const keys = BONUS_KEYS[side].filter((k) => k !== P.lastKey);
+    const key = keys[Math.floor(Math.random() * keys.length)];
+    P.bonus = { key, until: now + BONUS_LIMIT };
+    P.lastKey = key;
+    $('bonusKey' + side).textContent = key.toUpperCase();
+    const b = $('bonus' + side);
+    b.style.setProperty('--limit', BONUS_LIMIT + 'ms');
+    b.hidden = false;
+    b.classList.remove('live'); void b.offsetWidth; b.classList.add('live');
+    // počítač bonus někdy chytí, podle toho, jak je silný
+    P.cpuBonusAt = (S.mode === 'cpu' && side === 'R' && Math.random() < LEVELS[S.level].catch) ? now + rnd(450, 1400) : 0;
+  }
+  function hideBonus(side, now) {
+    const P = S.pl[side];
+    P.bonus = null; P.cpuBonusAt = 0;
+    P.nextBonus = now + rnd(1500, 3500);
+    $('bonus' + side).hidden = true;
+  }
+  function hideAllBonus() {
+    for (const side of ['L', 'R']) {
+      const P = S.pl[side];
+      P.bonus = null; P.cpuBonusAt = 0; P.nextBonus = Infinity;
+      $('bonus' + side).hidden = true;
+    }
+  }
+  function catchBonus(side) {
+    const P = S.pl[side];
+    if (S.state !== 'play' || !P.bonus) return;
+    hideBonus(side, performance.now());
+    P.bod = Math.min(BOD_MAX, P.bod + 1);
+    updatePts(side, 'up');
+    const [x, y] = headPos(side);
+    pop('Bonus! +1', x, y, '#ffcf3a', 1300);
+    sfx.bonus();
+  }
+  function missBonus(side) {
+    const P = S.pl[side];
+    if (S.state !== 'play' || !P.bonus) return;
+    hideBonus(side, performance.now());
+    const [x, y] = headPos(side);
+    pop('Vedle!', x, y, '#e7d3e6', 1000);
   }
 
   /* ---------- průběh hry ---------- */
   function resetRound() {
     S.timers.forEach(clearTimeout); S.timers = [];
     S.str = { L: 0, R: 0 }; S.taps = 0; S.lock = false;
+    S.pl = { L: newPlayer(), R: newPlayer() };
+    hideAllBonus(); updatePts('L'); updatePts('R');
     S.theta = S.omega = S.phi = S.omegaPhi = 0;
     for (const m of [M.L, M.R]) {
       m.deadAt = m.winAt = m.fadeAt = 0; m.jerk = 0;
@@ -847,6 +974,8 @@
       S.state = 'play';
       S.cpuNext = performance.now() + rnd(150, 350);
       S.cpuHelpNext = performance.now() + rnd(300, 700);
+      S.pl.L.nextBonus = performance.now() + rnd(1200, 2600);
+      S.pl.R.nextBonus = performance.now() + rnd(1200, 2600);
       setUI();
     }, 2100);
     later(() => { if (S.state === 'play') say('', ''); }, 2800);
@@ -857,9 +986,13 @@
   }
   function tap(side, helper) {
     if (S.state !== 'play') { if (S.state === 'idle' || (S.state === 'over' && !S.lock)) nudgeStart(); return; }
+    const P = S.pl[side], now = performance.now();
+    const otherLast = helper ? P.lastMon : P.lastHelp;
+    if (helper) P.lastHelp = now; else P.lastMon = now;
+    if (now - otherLast < SIM_MS) { penalize(side); return; } // obě tlačítka najednou: neplatí a body za ťuknutí klesnou
     const k = reduce ? 0.5 : 1;
     S.taps++;
-    S.str[side] = Math.min(100, S.str[side] + (helper ? HELP_STEP : STEP));
+    S.str[side] = Math.min(100, S.str[side] + P.bod);
     if (helper) {
       // pomocník se rozhoupe na větvi a cuká s korunou stromu
       const h = H[side];
@@ -882,6 +1015,7 @@
   }
   function finish(side) {
     S.state = 'over';
+    hideAllBonus();
     S.lock = true;
     const w = M[side], l = M[side === 'L' ? 'R' : 'L'];
     const now = performance.now();
@@ -983,12 +1117,20 @@
     canopy.setAttribute('transform', `rotate(${S.phi.toFixed(2)} 400 300)`);
 
     if (S.state === 'play' && S.mode === 'cpu' && now >= S.cpuNext) {
-      tap('R');
-      S.cpuNext = now + (1000 / LEVELS[S.level].rate) * rnd(0.55, 1.45);
+      if (now - S.pl.R.lastHelp < SIM_MS + 10) S.cpuNext = now + SIM_MS + 10; // počítač nemačká obě najednou
+      else { tap('R'); S.cpuNext = now + (1000 / LEVELS[S.level].rate) * rnd(0.55, 1.45); }
     }
     if (S.state === 'play' && S.mode === 'cpu' && now >= S.cpuHelpNext) {
-      tap('R', true);
-      S.cpuHelpNext = now + (1000 / (LEVELS[S.level].rate * 0.7)) * rnd(0.55, 1.45);
+      if (now - S.pl.R.lastMon < SIM_MS + 10) S.cpuHelpNext = now + SIM_MS + 10;
+      else { tap('R', true); S.cpuHelpNext = now + (1000 / (LEVELS[S.level].rate * 0.7)) * rnd(0.55, 1.45); }
+    }
+    if (S.state === 'play') {
+      for (const side of ['L', 'R']) {
+        const P = S.pl[side];
+        if (!P.bonus) { if (now >= P.nextBonus) showBonus(side, now); }
+        else if (P.cpuBonusAt && now >= P.cpuBonusAt) catchBonus(side);
+        else if (now >= P.bonus.until) hideBonus(side, now);
+      }
     }
 
     updateMonster(M.L, now, dt, t);
@@ -1043,7 +1185,7 @@
     }
 
     for (let i = pops.length - 1; i >= 0; i--) {
-      const p = pops[i], k = (now - p.t0) / 900;
+      const p = pops[i], k = (now - p.t0) / p.dur;
       if (k >= 1) { p.e.remove(); pops.splice(i, 1); continue; }
       p.e.setAttribute('y', (p.y - k * 30).toFixed(1));
       p.e.setAttribute('opacity', (1 - k * k).toFixed(2));
@@ -1089,6 +1231,12 @@
     btn.addEventListener('contextmenu', (e) => e.preventDefault());
   });
   btnStart.addEventListener('click', startGame);
+  for (const side of ['L', 'R']) {
+    const b = $('bonus' + side);
+    const human = () => !(side === 'R' && S.mode === 'cpu');
+    b.addEventListener('pointerdown', (e) => { e.preventDefault(); if (human()) catchBonus(side); });
+    b.addEventListener('click', (e) => { if (e.detail === 0 && human()) catchBonus(side); });
+  }
 
   for (const side of ['L', 'R']) {
     const m = M[side], other = M[side === 'L' ? 'R' : 'L'];
@@ -1126,6 +1274,17 @@
 
   addEventListener('keydown', (e) => {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    const key = (e.key || '').toLowerCase();
+    if (S.state === 'play') {
+      for (const side of ['L', 'R']) {
+        if (side === 'R' && S.mode === 'cpu') continue;
+        const P = S.pl[side];
+        if (P.bonus && BONUS_KEYS[side].includes(key)) {
+          if (key === P.bonus.key) catchBonus(side); else missBonus(side);
+          return;
+        }
+      }
+    }
     if (e.code === 'KeyA') { audio(); tap('L'); hit(btnL); }
     else if (e.code === 'KeyL' && S.mode === '2p') { audio(); tap('R'); hit(btnR); }
     else if (e.code === 'KeyS') { audio(); tap('L', true); hit(hlpL); }
@@ -1138,6 +1297,7 @@
   setUI();
   idleText();
   updateBars();
+  updatePts('L'); updatePts('R');
   requestAnimationFrame(frame);
 })();
 </script>
